@@ -1,4 +1,4 @@
-package org.cytoscape.welcome.internal.panel;
+package org.cytoscape.welcome.internal.view;
 
 /*
  * #%L
@@ -24,25 +24,29 @@ package org.cytoscape.welcome.internal.panel;
  * #L%
  */
 
-import javax.swing.BorderFactory;
-import javax.swing.BoxLayout;
+import java.awt.Window;
 
-public class NewsPanel extends AbstractWelcomeScreenChildPanel {
+import javax.swing.JPanel;
 
-	private static final long serialVersionUID = -1685752658901305871L;
+import org.cytoscape.util.swing.LookAndFeelUtil;
 
-	private final StatusPanel statusPanel;
+@SuppressWarnings("serial")
+public class AbstractWelcomeScreenChildPanel extends JPanel implements WelcomeScreenChildPanel {
+	
+	protected Window window;
 
-	public NewsPanel(final StatusPanel statusPanel) {
-		this.statusPanel = statusPanel;
-		initComponents();
+	protected AbstractWelcomeScreenChildPanel(final String title) {
+		setBorder(LookAndFeelUtil.createTitledBorder(title));
+	}
+	
+	@Override
+	public void closeParentWindow() {
+		if (window != null)
+			window.dispose();
 	}
 
-	private void initComponents() {
-		setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
-		setBorder(BorderFactory.createEmptyBorder(4, 4, 4, 4));
-		
-		statusPanel.setOpaque(false);
-		add(statusPanel);
+	@Override
+	public void setParentWindow(final Window window) {
+		this.window = window;
 	}
 }
