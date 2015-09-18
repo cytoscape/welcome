@@ -140,7 +140,7 @@ public class WelcomeScreenDialog extends JDialog {
 		urlMap.put(tutorial, "http://opentutorials.cgl.ucsf.edu/index.php/Portal:Cytoscape3");
 
 		for (final JLabel label : labelSet) {
-			label.setFont(label.getFont().deriveFont(LookAndFeelUtil.INFO_FONT_SIZE));
+			label.setFont(label.getFont().deriveFont(LookAndFeelUtil.getSmallFontSize()));
 			label.setBorder(BorderFactory.createEmptyBorder(4, 8, 4, 8));
 			label.setForeground(WelcomeScreenChildPanel.LINK_FONT_COLOR);
 			label.setHorizontalAlignment(SwingConstants.LEFT);

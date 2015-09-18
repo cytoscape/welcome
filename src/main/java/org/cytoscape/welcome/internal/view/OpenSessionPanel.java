@@ -137,7 +137,7 @@ public final class OpenSessionPanel extends AbstractWelcomeScreenChildPanel {
 			final File targetFile = new File(fileURI);
 			final JLabel fileLabel = new JLabel();
 			fileLabel.setText(" - " + targetFile.getName());
-			fileLabel.setFont(fileLabel.getFont().deriveFont(LookAndFeelUtil.INFO_FONT_SIZE));
+			fileLabel.setFont(fileLabel.getFont().deriveFont(LookAndFeelUtil.getSmallFontSize()));
 			fileLabel.setForeground(LINK_FONT_COLOR);
 			fileLabel.setHorizontalAlignment(SwingConstants.LEFT);
 			fileLabel.setCursor(new Cursor(Cursor.HAND_CURSOR));

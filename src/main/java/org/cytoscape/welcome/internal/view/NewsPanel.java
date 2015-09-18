@@ -75,7 +75,7 @@ public final class NewsPanel extends AbstractWelcomeScreenChildPanel {
 		statusIconLabel.setFont(iconManager.getIconFont(16.0f));
 		
 		final JLabel statusLabel = new JLabel("Checking for updates...");
-		statusLabel.setFont(statusLabel.getFont().deriveFont(LookAndFeelUtil.INFO_FONT_SIZE));
+		statusLabel.setFont(statusLabel.getFont().deriveFont(LookAndFeelUtil.getSmallFontSize()));
         
 		final JEditorPane newsPane = new JEditorPane() {
 			@Override
@@ -83,7 +83,7 @@ public final class NewsPanel extends AbstractWelcomeScreenChildPanel {
 				return true;
 			}
 		};
-		newsPane.setFont(newsPane.getFont().deriveFont(LookAndFeelUtil.INFO_FONT_SIZE));
+		newsPane.setFont(newsPane.getFont().deriveFont(LookAndFeelUtil.getSmallFontSize()));
 		newsPane.setEditable(false);
 		newsPane.setBorder(
 				BorderFactory.createCompoundBorder(
@@ -171,7 +171,7 @@ public final class NewsPanel extends AbstractWelcomeScreenChildPanel {
 							statusLabel.setText("Cytoscape " + versionStr + " is up to date.");
 						} else {
 							statusIconLabel.setText(IconManager.ICON_WARNING);
-							statusIconLabel.setForeground(LookAndFeelUtil.WARN_COLOR);
+							statusIconLabel.setForeground(LookAndFeelUtil.getWarnColor());
 							
 							if (versionStr.contains("-"))
 								statusLabel.setText("This is a pre-release version of Cytoscape.");
