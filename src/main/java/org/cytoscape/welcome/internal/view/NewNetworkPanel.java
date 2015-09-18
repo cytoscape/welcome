@@ -218,7 +218,7 @@ public class NewNetworkPanel extends AbstractWelcomeScreenChildPanel {
 						buttonMap.put(sourceLabel, button);
 						button.setHorizontalAlignment(SwingConstants.LEFT);
 						button.setToolTipText(tooltip);
-						button.setFont(button.getFont().deriveFont(LookAndFeelUtil.INFO_FONT_SIZE));
+						button.setFont(button.getFont().deriveFont(LookAndFeelUtil.getSmallFontSize()));
 
 						if (sourceLabel.contains("."))
 							button.setFont(button.getFont().deriveFont(Font.ITALIC));
