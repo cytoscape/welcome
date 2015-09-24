@@ -167,7 +167,7 @@ public final class NewsPanel extends AbstractWelcomeScreenChildPanel {
 						
 						if (versionStr.equals(latestVersion)) {
 							statusIconLabel.setText(IconManager.ICON_CHECK_CIRCLE);
-							statusIconLabel.setForeground(OK_COLOR);
+							statusIconLabel.setForeground(LookAndFeelUtil.getSuccessColor());
 							statusLabel.setText("Cytoscape " + versionStr + " is up to date.");
 						} else {
 							statusIconLabel.setText(IconManager.ICON_WARNING);

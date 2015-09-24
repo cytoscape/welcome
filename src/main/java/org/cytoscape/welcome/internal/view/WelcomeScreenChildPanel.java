@@ -32,7 +32,6 @@ import javax.swing.UIManager;
 public interface WelcomeScreenChildPanel {
 	
 	public static final Color LINK_FONT_COLOR = UIManager.getColor("Table.focusCellBackground");
-	public static final Color OK_COLOR = new Color(0, 104, 103);
 	 
 	public void closeParentWindow();
 	
