@@ -33,6 +33,7 @@ import java.util.Properties;
 
 import org.cytoscape.app.event.AppsFinishedStartingEvent;
 import org.cytoscape.app.event.AppsFinishedStartingListener;
+import org.cytoscape.application.CyApplicationConfiguration;
 import org.cytoscape.application.CyApplicationManager;
 import org.cytoscape.application.CyVersion;
 import org.cytoscape.application.swing.CySwingApplication;
@@ -71,6 +72,8 @@ public class CyActivator extends AbstractCyActivator implements AppsFinishedStar
 		
 		CyServiceRegistrar registrar = getService(bc, CyServiceRegistrar.class);
 		CyApplicationManager applicationManager = getService(bc, CyApplicationManager.class);
+		
+		
 		BendFactory bendFactory = getService(bc, BendFactory.class);
 		VisualMappingManager vmm = getService(bc, VisualMappingManager.class);
 		VisualStyleFactory vsFactoryServiceRef = getService(bc, VisualStyleFactory.class);
@@ -80,9 +83,11 @@ public class CyActivator extends AbstractCyActivator implements AppsFinishedStar
 				"(mapping.type=passthrough)");
 		VisualMappingFunctionFactory discreteMappingFactoryRef = getService(bc, VisualMappingFunctionFactory.class,
 				"(mapping.type=discrete)");
+		
+		
 		VisualStyleBuilder vsBuilder = new VisualStyleBuilder(vsFactoryServiceRef, continupousMappingFactoryRef,
 				discreteMappingFactoryRef, passthroughMappingFactoryRef, bendFactory);
-
+	
 		// Export preset tasks
 		final GenerateCustomStyleTaskFactory generateCustomStyleTaskFactory = new GenerateCustomStyleTaskFactory(
 				registrar, applicationManager, vsBuilder, vmm);
@@ -92,6 +97,7 @@ public class CyActivator extends AbstractCyActivator implements AppsFinishedStar
 		generateCustomStyleTaskFactoryProps.setProperty(TITLE, "Analyze selected networks and create custom styles");
 		generateCustomStyleTaskFactoryProps.setProperty(IN_TOOL_BAR, "false");
 		generateCustomStyleTaskFactoryProps.setProperty(ServiceProperties.ENABLE_FOR, "networkAndView");
+		
 		registerAllServices(bc, generateCustomStyleTaskFactory, generateCustomStyleTaskFactoryProps);
 	}
 
@@ -106,17 +112,20 @@ public class CyActivator extends AbstractCyActivator implements AppsFinishedStar
 		DialogTaskManager dialogTaskManagerServiceRef = getService(bc, DialogTaskManager.class);
 		TaskFactory importNetworkFileTF = getService(bc, TaskFactory.class, "(id=loadNetworkFileTaskFactory)");
 		LoadNetworkURLTaskFactory importNetworkTF = getService(bc, LoadNetworkURLTaskFactory.class);
+		CyApplicationConfiguration applicationConfiguration = getService(bc, CyApplicationConfiguration.class);
 		DataSourceManager dsManagerServiceRef = getService(bc, DataSourceManager.class);
 		@SuppressWarnings("unchecked")
 		CyProperty<Properties> cytoscapePropertiesServiceRef = getService(bc, CyProperty.class,
 				"(cyPropertyName=cytoscape3.props)");
 		IconManager iconManager = getService(bc, IconManager.class);
-
+		
+		
+		
 		// Build Child Panels
 		final OpenSessionPanel openPanel = new OpenSessionPanel(recentlyOpenedTrackerServiceRef, dialogTaskManagerServiceRef, openSessionTaskFactory);
 
 		final NewNetworkPanel newNetPanel = new NewNetworkPanel(bc, dialogTaskManagerServiceRef,
-				importNetworkFileTF, importNetworkTF, dsManagerServiceRef, newEmptyNetworkViewFactory);
+				importNetworkFileTF, importNetworkTF, dsManagerServiceRef, newEmptyNetworkViewFactory, applicationConfiguration,openSessionTaskFactory );
 		registerAllServices(bc, newNetPanel, new Properties());
 
 		// TODO: implement contents
