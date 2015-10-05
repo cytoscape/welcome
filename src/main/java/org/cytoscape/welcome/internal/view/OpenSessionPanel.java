@@ -40,6 +40,7 @@ import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.util.ArrayList;
 import java.util.List;
 
 import javax.imageio.ImageIO;
@@ -52,6 +53,7 @@ import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.SwingConstants;
 
+import org.cytoscape.application.CyApplicationConfiguration;
 import org.cytoscape.io.util.RecentlyOpenedTracker;
 import org.cytoscape.task.read.OpenSessionTaskFactory;
 import org.cytoscape.util.swing.LookAndFeelUtil;
@@ -66,22 +68,36 @@ public final class OpenSessionPanel extends AbstractWelcomeScreenChildPanel {
 	private static final Logger logger = LoggerFactory.getLogger(OpenSessionPanel.class);
 
 	private static final String ICON_LOCATION = "/images/Icons/open-file-32.png";
+	private static final String GAL_FILTERED_EXAMPLE_BUTTON_LABEL = "Sample Yeast Network";
+	private static final String SAMPLE_DATA_DIR = "sampleData";
+	private static final String GAL_FILTERED_CYS = "galFiltered.cys";
 	private BufferedImage openIconImg;
 	private ImageIcon openIcon;
 
 	// Display up to 7 files due to space.
 	private static final int MAX_FILES = 7;
+	
+	// Minimal number of example files to show.
+	// For example, set to 1 to force to always show one example file (e.g. "gal filtered").
+	private static final int MIN_EXAMPLE_FILES = 0;
 
 	private final RecentlyOpenedTracker fileTracker;
 	private final DialogTaskManager taskManager;
 	private final OpenSessionTaskFactory openSessionTaskFactory;
+	
+	/**
+	 * {@link CyApplicationConfiguration} service used to obtain the directories.
+	 */
+	private final CyApplicationConfiguration applicationConfiguration;
 
 	public OpenSessionPanel(final RecentlyOpenedTracker fileTracker, final DialogTaskManager taskManager,
-			final OpenSessionTaskFactory openSessionTaskFactory) {
+			final OpenSessionTaskFactory openSessionTaskFactory,
+			final CyApplicationConfiguration applicationConfiguration ) {
 		super("Open Recent Session");
 		this.fileTracker = fileTracker;
 		this.taskManager = taskManager;
 		this.openSessionTaskFactory = openSessionTaskFactory;
+		this.applicationConfiguration = applicationConfiguration;
 		initComponents();
 	}
 
@@ -97,9 +113,28 @@ public final class OpenSessionPanel extends AbstractWelcomeScreenChildPanel {
 		final List<URL> recentFiles = fileTracker.getRecentlyOpenedURLs();
 		int fileCount = recentFiles.size();
 		
-		if (fileCount > MAX_FILES)
+		if (fileCount > MAX_FILES) {
 			fileCount = MAX_FILES;
+		}	
+		
+		
+		// This sets to maximal number of example files that could be added:
+        int maxExampleFiles = 0;
+		if (fileCount < MAX_FILES ) {
+			maxExampleFiles = MAX_FILES - fileCount;
+		}
+		
+		// This sets the actual number of example files that will be added:
+		final List<ExampleFile>  examples = getExamples();
+		int exampleFileCount = examples.size();
+		if (exampleFileCount > maxExampleFiles) {
+			exampleFileCount = maxExampleFiles;
+		}
+		if ( exampleFileCount < MIN_EXAMPLE_FILES) {
+			exampleFileCount = MIN_EXAMPLE_FILES;
+		}
 
+		
 		final JButton openButton = new JButton("Open Session File...", openIcon);
 		openButton.setIconTextGap(20);
 		openButton.setHorizontalAlignment(SwingConstants.LEFT);
@@ -122,6 +157,7 @@ public final class OpenSessionPanel extends AbstractWelcomeScreenChildPanel {
 		
 		layout.setHorizontalGroup(hGroup);
 		layout.setVerticalGroup(vGroup.addContainerGap());
+		
 		
 		for (int i = 0; i < fileCount; i++) {
 			final URL target = recentFiles.get(i);
@@ -161,27 +197,86 @@ public final class OpenSessionPanel extends AbstractWelcomeScreenChildPanel {
 			vGroup.addComponent(fileLabel, PREFERRED_SIZE, DEFAULT_SIZE, PREFERRED_SIZE);
 		}
 		
+		// This adds the link to the example files:
+		for (int i = 0; i < exampleFileCount; i++) {
+			final ExampleFile example = examples.get(i);
+			if ( example != null ) {
+			    addLinkToExample(hGroup, vGroup, example);
+			}
+		}
+		
 		hGroup.addComponent(openButton, DEFAULT_SIZE, DEFAULT_SIZE, Short.MAX_VALUE);
 		vGroup.addComponent(openButton, PREFERRED_SIZE, DEFAULT_SIZE, PREFERRED_SIZE);
 	}
 
-//	private String getTruncatedPath(String path, double width, FontMetrics fm ) {
-//
-//		String fileName = path.substring(path.lastIndexOf('/'));
-//		if (fm.stringWidth("..."+fileName) > width){
-//			int startIndex = 4;
-//			fileName = "..." + fileName.substring(startIndex);
-//			while (fm.stringWidth(fileName) > width){
-//				fileName = "..." + fileName.substring(startIndex);
-//			}
-//			return fileName;
-//		}
-//		
-//		String address = path.substring(0, path.lastIndexOf('/'));
-//		while (fm.stringWidth(address + fileName) > width){
-//			address = address.substring(0, address.length() - 4) + "...";
-//		}
-//		
-//		return address + fileName;
-//	}
+	// This adds the link to one example file.
+	private void addLinkToExample(final ParallelGroup hGroup,
+			final SequentialGroup vGroup, final ExampleFile ex) {
+		if ( ex.getLocation() != null && ex.getLocation().exists() &&
+				ex.getLocation().canRead()	) {
+			final JLabel fileLabel = new JLabel();
+			fileLabel.setText(" - " + ex.getLabel());
+			fileLabel.setFont(fileLabel.getFont().deriveFont(LookAndFeelUtil.getSmallFontSize()));
+			fileLabel.setForeground(LINK_FONT_COLOR);
+			fileLabel.setHorizontalAlignment(SwingConstants.LEFT);
+			fileLabel.setCursor(new Cursor(Cursor.HAND_CURSOR));
+			fileLabel.setToolTipText( ex.getLocation().toString());
+			if (ex.getHelp() != null && ex.getHelp().length() > 0 ) {
+				fileLabel.setToolTipText( ex.getHelp());
+			}
+			else {
+				fileLabel.setToolTipText( ex.getLocation().toString());
+			}
+			fileLabel.addMouseListener(new MouseAdapter() {
+				@Override
+				public void mouseClicked(MouseEvent e) {
+						taskManager.execute(openSessionTaskFactory.createTaskIterator(ex.getLocation()));
+						closeParentWindow();
+				}
+			});
+			hGroup.addComponent(fileLabel, PREFERRED_SIZE, DEFAULT_SIZE, 300);
+			vGroup.addComponent(fileLabel, PREFERRED_SIZE, DEFAULT_SIZE, PREFERRED_SIZE);
+		}
+		else {
+		   logger.error("failed to get example file " + ex.getLabel() + " at: " + ex.getLocation() );
+		}
+	}
+	
+	// This returns to location of the example files.
+	private final File getExampleDirLocation() {
+		if (applicationConfiguration != null ) {
+			return new File( applicationConfiguration.getInstallationDirectoryLocation() + "/" + SAMPLE_DATA_DIR + "/" );
+		}
+		else {
+			logger.error("application configuration is null, cannot find the installation directory");
+			return null;
+		}
+	}
+	
+	// This returns a list of example files.
+	private List<ExampleFile> getExamples() {
+		final List<ExampleFile> examples = new ArrayList<ExampleFile>();
+		String galFilteredToolTip = "";
+		final File example_dir = getExampleDirLocation();
+		if ( example_dir != null && example_dir.exists() ) {
+			galFilteredToolTip = "This (\"gal Filtered\"), and other examples files, can be found in " + example_dir;
+		}
+		final ExampleFile galFiltered = new ExampleFile(getGalFilteredLocation(), GAL_FILTERED_EXAMPLE_BUTTON_LABEL, galFilteredToolTip );
+		examples.add( galFiltered );
+		return  examples;
+	}
+	
+	// This get the location for "galFiltered.cys".
+	private final File getGalFilteredLocation() {
+		if (applicationConfiguration != null ) {
+			return new File( applicationConfiguration.getInstallationDirectoryLocation() + "/" + SAMPLE_DATA_DIR + "/" +  GAL_FILTERED_CYS );
+		}
+		else {
+			logger.error("application configuration is null, cannot find the installation directory");
+			return null;
+		}
+	}
+	
+
+
 }

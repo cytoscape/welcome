@@ -122,10 +122,10 @@ public class CyActivator extends AbstractCyActivator implements AppsFinishedStar
 		
 		
 		// Build Child Panels
-		final OpenSessionPanel openPanel = new OpenSessionPanel(recentlyOpenedTrackerServiceRef, dialogTaskManagerServiceRef, openSessionTaskFactory);
+		final OpenSessionPanel openPanel = new OpenSessionPanel(recentlyOpenedTrackerServiceRef, dialogTaskManagerServiceRef, openSessionTaskFactory,applicationConfiguration);
 
 		final NewNetworkPanel newNetPanel = new NewNetworkPanel(bc, dialogTaskManagerServiceRef,
-				importNetworkFileTF, importNetworkTF, dsManagerServiceRef, newEmptyNetworkViewFactory, applicationConfiguration,openSessionTaskFactory );
+				importNetworkFileTF, importNetworkTF, dsManagerServiceRef, newEmptyNetworkViewFactory);
 		registerAllServices(bc, newNetPanel, new Properties());
 
 		// TODO: implement contents

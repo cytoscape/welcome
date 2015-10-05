@@ -33,9 +33,9 @@ import java.awt.GridLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.image.BufferedImage;
-import java.io.File;
 import java.io.IOException;
-import java.net.MalformedURLException;import java.net.URL;
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -53,19 +53,16 @@ import javax.swing.GroupLayout;
 import javax.swing.Icon;
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
-import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.LayoutStyle.ComponentPlacement;
 import javax.swing.SwingConstants;
 
-import org.cytoscape.application.CyApplicationConfiguration;
 import org.cytoscape.application.swing.CyAction;
 import org.cytoscape.io.DataCategory;
 import org.cytoscape.io.datasource.DataSource;
 import org.cytoscape.io.datasource.DataSourceManager;
 import org.cytoscape.task.create.NewEmptyNetworkViewFactory;
 import org.cytoscape.task.read.LoadNetworkURLTaskFactory;
-import org.cytoscape.task.read.OpenSessionTaskFactory;
 import org.cytoscape.util.swing.LookAndFeelUtil;
 import org.cytoscape.work.TaskFactory;
 import org.cytoscape.work.TaskIterator;
@@ -78,31 +75,21 @@ import org.slf4j.LoggerFactory;
 
 public class NewNetworkPanel extends AbstractWelcomeScreenChildPanel {
 
-	private static final String GAL_FILTERED_EXAMPLE_BUTTON_TEXT = "From Sample Yeast Network";
 	private static final long serialVersionUID = -8750909701276867389L;
 	private static final Logger logger = LoggerFactory.getLogger(NewNetworkPanel.class);
 	
 	private static final Icon NEW_ICON;
 	private static final Icon DATABASE_ICON;
 	private static final Icon OPEN_ICON;
-	private static final Icon GAL_FILTERED_ICON;
 	
 	private static final Map<String, Icon> SPECIES_ICON = new HashMap<>();
 	
 	private static final Pattern METATAG = Pattern.compile("(.*?)<meta>(.+?)</meta>(.*?)");
-	private static final String SAMPLE_DATA_DIR = "sampleData";
-	private static final String GAL_FILTERED_CYS = "galFiltered.cys";
-	
-	/**
-	 * {@link CyApplicationConfiguration} service used to obtain the directories.
-	 */
-	private final CyApplicationConfiguration applicationConfiguration;
 
 	static {
 		BufferedImage newImage = null;
 		BufferedImage databaseImage = null;
 		BufferedImage loadImage = null;
-		BufferedImage galFilteredImage = null;
 
 		try {
 			newImage = ImageIO.read(WelcomeScreenDialog.class.getClassLoader().getResource("images/Icons/new-empty-32.png"));
@@ -115,15 +102,8 @@ public class NewNetworkPanel extends AbstractWelcomeScreenChildPanel {
 		} catch (IOException e) {
 			logger.warn("Could not create Icon.", e);
 		}
-		
 		try {
 			loadImage = ImageIO.read(WelcomeScreenDialog.class.getClassLoader().getResource("images/Icons/import-net-32.png"));
-		} catch (IOException e) {
-			logger.warn("Could not create Icon.", e);
-		}
-		
-		try {
-			galFilteredImage = ImageIO.read(WelcomeScreenDialog.class.getClassLoader().getResource("images/Icons/taxonomy/yeast-32.png"));
 		} catch (IOException e) {
 			logger.warn("Could not create Icon.", e);
 		}
@@ -142,11 +122,6 @@ public class NewNetworkPanel extends AbstractWelcomeScreenChildPanel {
 			OPEN_ICON = new ImageIcon(loadImage);
 		else
 			OPEN_ICON = null;
-		
-		if (galFilteredImage != null)
-			GAL_FILTERED_ICON = new ImageIcon(galFilteredImage);
-		else
-			GAL_FILTERED_ICON = null;
 		
 		// Species ICON
 		try {
@@ -182,8 +157,6 @@ public class NewNetworkPanel extends AbstractWelcomeScreenChildPanel {
 	private final List<JButton> dataSourceButtons;
 
 	private ButtonGroup bGroup;
-	
-	private final OpenSessionTaskFactory openSessionTaskFactory;
 
 	public NewNetworkPanel(
 			final BundleContext bc,
@@ -191,10 +164,8 @@ public class NewNetworkPanel extends AbstractWelcomeScreenChildPanel {
 			final TaskFactory importNetworkFileTF,
 			final LoadNetworkURLTaskFactory loadTF,
 			final DataSourceManager dsManager,
-			final NewEmptyNetworkViewFactory newEmptyNetworkViewFactory,
-			final CyApplicationConfiguration applicationConfiguration,
-			final OpenSessionTaskFactory openSessionTaskFactory
-	)  {
+			final NewEmptyNetworkViewFactory newEmptyNetworkViewFactory
+	) {
 		super("Start New Session");
 		this.bc = bc;
 		this.importNetworkFromURLTF = loadTF;
@@ -202,14 +173,10 @@ public class NewNetworkPanel extends AbstractWelcomeScreenChildPanel {
 		this.newEmptyNetworkViewFactory = newEmptyNetworkViewFactory;
 		this.guiTaskManager = guiTaskManager;
 		this.dsManager = dsManager;
-		this.applicationConfiguration = applicationConfiguration ;
-		this.openSessionTaskFactory = openSessionTaskFactory;
 		
 		dataSourceMap = new HashMap<>();
 		dataSourceButtons = new ArrayList<>();
-		
-		
-		
+
 		createDataSourceButtons();
 		initComponents();
 	}
@@ -275,35 +242,7 @@ public class NewNetworkPanel extends AbstractWelcomeScreenChildPanel {
 			bGroup.add(btn);
 	}
 
-	
-	
 	private void initComponents() {
-		
-		final JButton galFilteredButton = new JButton(GAL_FILTERED_EXAMPLE_BUTTON_TEXT, GAL_FILTERED_ICON);
-		galFilteredButton.setHorizontalAlignment(SwingConstants.LEFT);
-		galFilteredButton.setIconTextGap(20);
-		addExampleDirToolTip(galFilteredButton);
-		final File galFilteredFile = getGalFilteredLocation();
-		galFilteredButton.addActionListener(new ActionListener() {
-			@Override
-			public void actionPerformed(ActionEvent arg0) {
-				if ( galFilteredFile != null ) {
-					if (galFilteredFile.exists()) {
-						guiTaskManager.execute(openSessionTaskFactory.createTaskIterator(galFilteredFile));
-						closeParentWindow();
-					} else {
-						JOptionPane.showMessageDialog(NewNetworkPanel.this.getTopLevelAncestor(),
-								"Session file not found:\n" + galFilteredFile.getAbsolutePath(),
-								"File not Found",
-								JOptionPane.WARNING_MESSAGE);
-					}
-				}
-				else {
-					logger.error("failed to get gal filtered example file" );
-				}
-			}
-		});
-		
 		final JButton emptyNetButton = new JButton("With Empty Network", NEW_ICON);
 		emptyNetButton.setHorizontalAlignment(SwingConstants.LEFT);
 		emptyNetButton.setIconTextGap(20);
@@ -360,8 +299,8 @@ public class NewNetworkPanel extends AbstractWelcomeScreenChildPanel {
 		this.setLayout(layout);
 		layout.setAutoCreateContainerGaps(false);
 		layout.setAutoCreateGaps(!LookAndFeelUtil.isAquaLAF());
+		
 		layout.setHorizontalGroup(layout.createParallelGroup(LEADING, true)
-				.addComponent(galFilteredButton, DEFAULT_SIZE, DEFAULT_SIZE, Short.MAX_VALUE)
 				.addComponent(emptyNetButton, DEFAULT_SIZE, DEFAULT_SIZE, Short.MAX_VALUE)
 				.addComponent(fileImportButton, DEFAULT_SIZE, DEFAULT_SIZE, Short.MAX_VALUE)
 				.addComponent(dbButton, DEFAULT_SIZE, DEFAULT_SIZE, Short.MAX_VALUE)
@@ -369,42 +308,12 @@ public class NewNetworkPanel extends AbstractWelcomeScreenChildPanel {
 		);
 		layout.setVerticalGroup(layout.createSequentialGroup()
 				.addContainerGap()
-				.addComponent(galFilteredButton,PREFERRED_SIZE, DEFAULT_SIZE, PREFERRED_SIZE)
 				.addComponent(emptyNetButton, PREFERRED_SIZE, DEFAULT_SIZE, PREFERRED_SIZE)
 				.addComponent(fileImportButton, PREFERRED_SIZE, DEFAULT_SIZE, PREFERRED_SIZE)
 				.addComponent(dbButton, PREFERRED_SIZE, DEFAULT_SIZE, PREFERRED_SIZE)
 				.addPreferredGap(ComponentPlacement.UNRELATED)
 				.addComponent(dsButtonPanel, DEFAULT_SIZE, DEFAULT_SIZE, Short.MAX_VALUE)
-				
 		);
-	}
-	
-	private final File getGalFilteredLocation() {
-		if (applicationConfiguration != null ) {
-			return new File( applicationConfiguration.getInstallationDirectoryLocation() + "/" + SAMPLE_DATA_DIR + "/" +  GAL_FILTERED_CYS );
-		}
-		else {
-			logger.error("application configuration is null, cannot find the installation directory");
-			return null;
-		}
-	}
-	
-	private final File getExampleDirLocation() {
-		if (applicationConfiguration != null ) {
-			return new File( applicationConfiguration.getInstallationDirectoryLocation() + "/" + SAMPLE_DATA_DIR + "/" );
-		}
-		else {
-			logger.error("application configuration is null, cannot find the installation directory");
-			return null;
-		}
-	}
-	
-
-	private final void addExampleDirToolTip(final JButton galFilteredButton) {
-		final File example_dir = getExampleDirLocation();
-		if ( example_dir != null && example_dir.exists() ) {
-		    galFilteredButton.setToolTipText("More examples files can be found in " + example_dir );
-		}
 	}
 
 	private final void loadFromFile() {
