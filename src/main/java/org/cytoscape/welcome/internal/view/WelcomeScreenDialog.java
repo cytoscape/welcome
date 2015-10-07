@@ -116,6 +116,18 @@ public class WelcomeScreenDialog extends JDialog {
 		return checkBox.isSelected();
 	}
 
+	@Override
+	public void setVisible(boolean b) {
+		if (b) {
+			// Recent session files list may have changed, so always update this panel first
+			openPanel.update();
+			invalidate();
+			pack();
+		}
+		
+		super.setVisible(b);
+	}
+	
 	private void initComponents() {
 		this.setTitle(TITLE);
 		this.setResizable(false);

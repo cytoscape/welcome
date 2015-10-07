@@ -33,18 +33,15 @@ import java.util.Properties;
 
 import org.cytoscape.app.event.AppsFinishedStartingEvent;
 import org.cytoscape.app.event.AppsFinishedStartingListener;
-import org.cytoscape.application.CyApplicationConfiguration;
 import org.cytoscape.application.CyApplicationManager;
 import org.cytoscape.application.CyVersion;
 import org.cytoscape.application.swing.CySwingApplication;
 import org.cytoscape.io.datasource.DataSourceManager;
-import org.cytoscape.io.util.RecentlyOpenedTracker;
 import org.cytoscape.property.CyProperty;
 import org.cytoscape.service.util.AbstractCyActivator;
 import org.cytoscape.service.util.CyServiceRegistrar;
 import org.cytoscape.task.create.NewEmptyNetworkViewFactory;
 import org.cytoscape.task.read.LoadNetworkURLTaskFactory;
-import org.cytoscape.task.read.OpenSessionTaskFactory;
 import org.cytoscape.util.swing.IconManager;
 import org.cytoscape.util.swing.OpenBrowser;
 import org.cytoscape.view.presentation.property.values.BendFactory;
@@ -73,7 +70,6 @@ public class CyActivator extends AbstractCyActivator implements AppsFinishedStar
 		CyServiceRegistrar registrar = getService(bc, CyServiceRegistrar.class);
 		CyApplicationManager applicationManager = getService(bc, CyApplicationManager.class);
 		
-		
 		BendFactory bendFactory = getService(bc, BendFactory.class);
 		VisualMappingManager vmm = getService(bc, VisualMappingManager.class);
 		VisualStyleFactory vsFactoryServiceRef = getService(bc, VisualStyleFactory.class);
@@ -83,7 +79,6 @@ public class CyActivator extends AbstractCyActivator implements AppsFinishedStar
 				"(mapping.type=passthrough)");
 		VisualMappingFunctionFactory discreteMappingFactoryRef = getService(bc, VisualMappingFunctionFactory.class,
 				"(mapping.type=discrete)");
-		
 		
 		VisualStyleBuilder vsBuilder = new VisualStyleBuilder(vsFactoryServiceRef, continupousMappingFactoryRef,
 				discreteMappingFactoryRef, passthroughMappingFactoryRef, bendFactory);
@@ -103,26 +98,22 @@ public class CyActivator extends AbstractCyActivator implements AppsFinishedStar
 
 	@Override
 	public void handleEvent(AppsFinishedStartingEvent e) {
+		CyServiceRegistrar registrar = getService(bc, CyServiceRegistrar.class);
 		CySwingApplication cytoscapeDesktop = getService(bc, CySwingApplication.class);
 		CyVersion cyVersion = getService(bc, CyVersion.class);
 		NewEmptyNetworkViewFactory newEmptyNetworkViewFactory = getService(bc, NewEmptyNetworkViewFactory.class);
 		OpenBrowser openBrowserServiceRef = getService(bc, OpenBrowser.class);
-		RecentlyOpenedTracker recentlyOpenedTrackerServiceRef = getService(bc, RecentlyOpenedTracker.class);
-		OpenSessionTaskFactory openSessionTaskFactory = getService(bc, OpenSessionTaskFactory.class);
 		DialogTaskManager dialogTaskManagerServiceRef = getService(bc, DialogTaskManager.class);
 		TaskFactory importNetworkFileTF = getService(bc, TaskFactory.class, "(id=loadNetworkFileTaskFactory)");
 		LoadNetworkURLTaskFactory importNetworkTF = getService(bc, LoadNetworkURLTaskFactory.class);
-		CyApplicationConfiguration applicationConfiguration = getService(bc, CyApplicationConfiguration.class);
 		DataSourceManager dsManagerServiceRef = getService(bc, DataSourceManager.class);
 		@SuppressWarnings("unchecked")
 		CyProperty<Properties> cytoscapePropertiesServiceRef = getService(bc, CyProperty.class,
 				"(cyPropertyName=cytoscape3.props)");
 		IconManager iconManager = getService(bc, IconManager.class);
 		
-		
-		
 		// Build Child Panels
-		final OpenSessionPanel openPanel = new OpenSessionPanel(recentlyOpenedTrackerServiceRef, dialogTaskManagerServiceRef, openSessionTaskFactory,applicationConfiguration);
+		final OpenSessionPanel openPanel = new OpenSessionPanel(registrar);
 
 		final NewNetworkPanel newNetPanel = new NewNetworkPanel(bc, dialogTaskManagerServiceRef,
 				importNetworkFileTF, importNetworkTF, dsManagerServiceRef, newEmptyNetworkViewFactory);
