@@ -64,8 +64,8 @@ public class GenerateCustomStyleTask extends AbstractTask {
 			analyzeNetworkCollectionTaskFactory = registrar.getService(AnalyzeNetworkCollectionTaskFactory.class); 
 		}
 		catch(Throwable t) {
-			throw new Exception("<html>Network Analyzer is currently unavailable.<br>"
-					+ "Make sure Cytoscape has finished starting up and try again.</html>");
+			throw new Exception("Network Analyzer is currently unavailable.\n"
+					+ "Make sure Cytoscape has finished starting up and try again.");
 		}
 
 		final List<CyNetworkView> selectedViews = applicationManager.getSelectedNetworkViews();
