@@ -20,7 +20,7 @@
 	<groupId>org.cytoscape</groupId>
 	<artifactId>welcome</artifactId>
 	<version>3.3.0-SNAPSHOT</version>
-	<name>Cytoscape Welcome Screen (${project.artifactId})</name>
+	<name>Welcome Screen</name>
 	<packaging>bundle</packaging>
 
 	<scm>
