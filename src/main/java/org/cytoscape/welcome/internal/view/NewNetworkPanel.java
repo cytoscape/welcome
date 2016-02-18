@@ -56,6 +56,7 @@ import javax.swing.JButton;
 import javax.swing.JPanel;
 import javax.swing.LayoutStyle.ComponentPlacement;
 import javax.swing.SwingConstants;
+import javax.swing.SwingUtilities;
 
 import org.cytoscape.application.swing.CyAction;
 import org.cytoscape.io.DataCategory;
@@ -68,12 +69,14 @@ import org.cytoscape.work.TaskFactory;
 import org.cytoscape.work.TaskIterator;
 import org.cytoscape.work.swing.DialogTaskManager;
 import org.osgi.framework.BundleContext;
+import org.osgi.framework.BundleEvent;
+import org.osgi.framework.BundleListener;
 import org.osgi.framework.InvalidSyntaxException;
 import org.osgi.framework.ServiceReference;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class NewNetworkPanel extends AbstractWelcomeScreenChildPanel {
+public class NewNetworkPanel extends AbstractWelcomeScreenChildPanel implements BundleListener {
 
 	private static final long serialVersionUID = -8750909701276867389L;
 	private static final Logger logger = LoggerFactory.getLogger(NewNetworkPanel.class);
@@ -373,5 +376,19 @@ public class NewNetworkPanel extends AbstractWelcomeScreenChildPanel {
 		final ServiceReference ref = actions[0];
 		final CyAction action = (CyAction) bc.getService(ref);
 		action.actionPerformed(null);
+	}
+	
+	@Override
+	public void bundleChanged(BundleEvent event) {
+		if ("org.cytoscape.datasource-biogrid-impl".equals(event.getBundle().getSymbolicName())) {
+			SwingUtilities.invokeLater(new Runnable() {
+				@Override
+				public void run() {
+					update();
+					if(window != null)
+						window.pack();
+				}
+			});
+		}	
 	}
 }

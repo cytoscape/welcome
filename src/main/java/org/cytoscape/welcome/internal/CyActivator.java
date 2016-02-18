@@ -107,6 +107,7 @@ public class CyActivator extends AbstractCyActivator{
 		final NewNetworkPanel newNetPanel = new NewNetworkPanel(bc, dialogTaskManagerServiceRef,
 				importNetworkFileTF, importNetworkTF, dsManagerServiceRef, newEmptyNetworkViewFactory);
 		registerAllServices(bc, newNetPanel, new Properties());
+		bc.addBundleListener(newNetPanel);
 
 		// TODO: implement contents
 		final NewsPanel newsPanel = new NewsPanel(cyVersion, iconManager);
