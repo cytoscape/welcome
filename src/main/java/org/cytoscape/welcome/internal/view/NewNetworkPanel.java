@@ -181,6 +181,14 @@ public class NewNetworkPanel extends AbstractWelcomeScreenChildPanel {
 		initComponents();
 	}
 	
+	public void update() {
+		dataSourceMap.clear();
+		dataSourceButtons.clear();
+		removeAll();
+		createDataSourceButtons();
+		initComponents();
+	}
+	
 	private void createDataSourceButtons() {
 		final SortedMap<String, JButton> buttonMap = new TreeMap<>();
 		// Extract the URL entries
