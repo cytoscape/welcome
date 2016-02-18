@@ -121,6 +121,7 @@ public class WelcomeScreenDialog extends JDialog {
 		if (b) {
 			// Recent session files list may have changed, so always update this panel first
 			openPanel.update();
+			newNetPanel.update();
 			invalidate();
 			pack();
 		}
