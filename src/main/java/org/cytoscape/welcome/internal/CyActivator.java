@@ -31,8 +31,6 @@ import static org.cytoscape.work.ServiceProperties.TITLE;
 
 import java.util.Properties;
 
-import org.cytoscape.app.event.AppsFinishedStartingEvent;
-import org.cytoscape.app.event.AppsFinishedStartingListener;
 import org.cytoscape.application.CyApplicationManager;
 import org.cytoscape.application.CyVersion;
 import org.cytoscape.application.swing.CySwingApplication;
@@ -58,15 +56,11 @@ import org.cytoscape.work.TaskFactory;
 import org.cytoscape.work.swing.DialogTaskManager;
 import org.osgi.framework.BundleContext;
 
-public class CyActivator extends AbstractCyActivator implements AppsFinishedStartingListener {
+public class CyActivator extends AbstractCyActivator{
 	
-	private BundleContext bc;
 
 	@Override
 	public void start(BundleContext bc) {
-		this.bc = bc;
-		registerService(bc, this, AppsFinishedStartingListener.class, new Properties());
-		
 		CyServiceRegistrar registrar = getService(bc, CyServiceRegistrar.class);
 		CyApplicationManager applicationManager = getService(bc, CyApplicationManager.class);
 		
@@ -94,11 +88,6 @@ public class CyActivator extends AbstractCyActivator implements AppsFinishedStar
 		generateCustomStyleTaskFactoryProps.setProperty(ServiceProperties.ENABLE_FOR, "networkAndView");
 		
 		registerAllServices(bc, generateCustomStyleTaskFactory, generateCustomStyleTaskFactoryProps);
-	}
-
-	@Override
-	public void handleEvent(AppsFinishedStartingEvent e) {
-		CyServiceRegistrar registrar = getService(bc, CyServiceRegistrar.class);
 		CySwingApplication cytoscapeDesktop = getService(bc, CySwingApplication.class);
 		CyVersion cyVersion = getService(bc, CyVersion.class);
 		NewEmptyNetworkViewFactory newEmptyNetworkViewFactory = getService(bc, NewEmptyNetworkViewFactory.class);

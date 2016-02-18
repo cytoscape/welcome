@@ -30,12 +30,14 @@ import java.util.Properties;
 
 import javax.swing.SwingUtilities;
 
+import org.cytoscape.application.events.CyStartEvent;
+import org.cytoscape.application.events.CyStartListener;
 import org.cytoscape.application.swing.AbstractCyAction;
 import org.cytoscape.application.swing.CySwingApplication;
 import org.cytoscape.property.CyProperty;
 import org.cytoscape.util.swing.OpenBrowser;
 
-public class WelcomeScreenAction extends AbstractCyAction {
+public class WelcomeScreenAction extends AbstractCyAction implements CyStartListener {
 
 	private static final long serialVersionUID = 2584201062371825221L;
 
@@ -74,14 +76,6 @@ public class WelcomeScreenAction extends AbstractCyAction {
 		this.openBrowser = openBrowser;
 
 		this.cyProps = cyProps;
-
-		// Show it if necessary
-		SwingUtilities.invokeLater(new Runnable() {
-			@Override
-			public void run() {
-				startup();
-			}
-		});
 	}
 
 	@Override
@@ -135,5 +129,16 @@ public class WelcomeScreenAction extends AbstractCyAction {
 		}
 		
 		return lhide;
+	}
+
+	@Override
+	public void handleEvent(CyStartEvent cyStartEvent) {
+		// Show it if necessary
+		SwingUtilities.invokeLater(new Runnable() {
+			@Override
+			public void run() {
+				startup();
+			}
+		});
 	}
 }
