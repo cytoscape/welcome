@@ -19,7 +19,7 @@
 
 	<groupId>org.cytoscape</groupId>
 	<artifactId>welcome</artifactId>
-	<version>3.4.1-SNAPSHOT</version>
+	<version>3.4.1</version>
 	<name>Welcome Screen</name>
 	<packaging>bundle</packaging>
 
