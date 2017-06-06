@@ -1,12 +1,31 @@
 package org.cytoscape.welcome.internal;
 
+import static org.cytoscape.work.ServiceProperties.IN_TOOL_BAR;
+import static org.cytoscape.work.ServiceProperties.MENU_GRAVITY;
+import static org.cytoscape.work.ServiceProperties.PREFERRED_MENU;
+import static org.cytoscape.work.ServiceProperties.TITLE;
+
+import java.util.Properties;
+
+import org.cytoscape.application.CyApplicationManager;
+import org.cytoscape.service.util.AbstractCyActivator;
+import org.cytoscape.service.util.CyServiceRegistrar;
+import org.cytoscape.view.presentation.property.values.BendFactory;
+import org.cytoscape.view.vizmap.VisualMappingFunctionFactory;
+import org.cytoscape.view.vizmap.VisualMappingManager;
+import org.cytoscape.view.vizmap.VisualStyleFactory;
+import org.cytoscape.welcome.internal.task.GenerateCustomStyleTaskFactory;
+import org.cytoscape.welcome.internal.view.CheckForUpdatesAction;
+import org.cytoscape.work.ServiceProperties;
+import org.osgi.framework.BundleContext;
+
 /*
  * #%L
  * Cytoscape Welcome Screen Impl (welcome-impl)
  * $Id:$
  * $HeadURL:$
  * %%
- * Copyright (C) 2006 - 2013 The Cytoscape Consortium
+ * Copyright (C) 2006 - 2017 The Cytoscape Consortium
  * %%
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as 
@@ -24,44 +43,11 @@ package org.cytoscape.welcome.internal;
  * #L%
  */
 
-import static org.cytoscape.work.ServiceProperties.IN_TOOL_BAR;
-import static org.cytoscape.work.ServiceProperties.MENU_GRAVITY;
-import static org.cytoscape.work.ServiceProperties.PREFERRED_MENU;
-import static org.cytoscape.work.ServiceProperties.TITLE;
-
-import java.util.Properties;
-
-import org.cytoscape.application.CyApplicationManager;
-import org.cytoscape.application.CyVersion;
-import org.cytoscape.application.swing.CySwingApplication;
-import org.cytoscape.io.datasource.DataSourceManager;
-import org.cytoscape.property.CyProperty;
-import org.cytoscape.service.util.AbstractCyActivator;
-import org.cytoscape.service.util.CyServiceRegistrar;
-import org.cytoscape.task.create.NewEmptyNetworkViewFactory;
-import org.cytoscape.task.read.LoadNetworkURLTaskFactory;
-import org.cytoscape.util.swing.IconManager;
-import org.cytoscape.util.swing.OpenBrowser;
-import org.cytoscape.view.presentation.property.values.BendFactory;
-import org.cytoscape.view.vizmap.VisualMappingFunctionFactory;
-import org.cytoscape.view.vizmap.VisualMappingManager;
-import org.cytoscape.view.vizmap.VisualStyleFactory;
-import org.cytoscape.welcome.internal.task.GenerateCustomStyleTaskFactory;
-import org.cytoscape.welcome.internal.view.NewNetworkPanel;
-import org.cytoscape.welcome.internal.view.NewsPanel;
-import org.cytoscape.welcome.internal.view.OpenSessionPanel;
-import org.cytoscape.welcome.internal.view.WelcomeScreenAction;
-import org.cytoscape.work.ServiceProperties;
-import org.cytoscape.work.TaskFactory;
-import org.cytoscape.work.swing.DialogTaskManager;
-import org.osgi.framework.BundleContext;
-
 public class CyActivator extends AbstractCyActivator{
-	
 
 	@Override
 	public void start(BundleContext bc) {
-		CyServiceRegistrar registrar = getService(bc, CyServiceRegistrar.class);
+		CyServiceRegistrar serviceRegistrar = getService(bc, CyServiceRegistrar.class);
 		CyApplicationManager applicationManager = getService(bc, CyApplicationManager.class);
 		
 		BendFactory bendFactory = getService(bc, BendFactory.class);
@@ -77,44 +63,22 @@ public class CyActivator extends AbstractCyActivator{
 		VisualStyleBuilder vsBuilder = new VisualStyleBuilder(vsFactoryServiceRef, continupousMappingFactoryRef,
 				discreteMappingFactoryRef, passthroughMappingFactoryRef, bendFactory);
 	
-		// Export preset tasks
-		final GenerateCustomStyleTaskFactory generateCustomStyleTaskFactory = new GenerateCustomStyleTaskFactory(
-				registrar, applicationManager, vsBuilder, vmm);
-		Properties generateCustomStyleTaskFactoryProps = new Properties();
-		generateCustomStyleTaskFactoryProps.setProperty(PREFERRED_MENU, "Tools.Workflow[3.0]");
-		generateCustomStyleTaskFactoryProps.setProperty(MENU_GRAVITY, "20.0");
-		generateCustomStyleTaskFactoryProps.setProperty(TITLE, "Analyze selected networks and create custom styles");
-		generateCustomStyleTaskFactoryProps.setProperty(IN_TOOL_BAR, "false");
-		generateCustomStyleTaskFactoryProps.setProperty(ServiceProperties.ENABLE_FOR, "networkAndView");
+		{
+			// Export preset tasks
+			GenerateCustomStyleTaskFactory factory = new GenerateCustomStyleTaskFactory(
+					serviceRegistrar, applicationManager, vsBuilder, vmm);
+			Properties props = new Properties();
+			props.setProperty(PREFERRED_MENU, "Tools.Workflow[3.0]");
+			props.setProperty(MENU_GRAVITY, "20.0");
+			props.setProperty(TITLE, "Analyze selected networks and create custom styles");
+			props.setProperty(IN_TOOL_BAR, "false");
+			props.setProperty(ServiceProperties.ENABLE_FOR, "networkAndView");
+			
+			registerAllServices(bc, factory, props);
+		}
 		
-		registerAllServices(bc, generateCustomStyleTaskFactory, generateCustomStyleTaskFactoryProps);
-		CySwingApplication cytoscapeDesktop = getService(bc, CySwingApplication.class);
-		CyVersion cyVersion = getService(bc, CyVersion.class);
-		NewEmptyNetworkViewFactory newEmptyNetworkViewFactory = getService(bc, NewEmptyNetworkViewFactory.class);
-		OpenBrowser openBrowserServiceRef = getService(bc, OpenBrowser.class);
-		DialogTaskManager dialogTaskManagerServiceRef = getService(bc, DialogTaskManager.class);
-		TaskFactory importNetworkFileTF = getService(bc, TaskFactory.class, "(id=loadNetworkFileTaskFactory)");
-		LoadNetworkURLTaskFactory importNetworkTF = getService(bc, LoadNetworkURLTaskFactory.class);
-		DataSourceManager dsManagerServiceRef = getService(bc, DataSourceManager.class);
-		@SuppressWarnings("unchecked")
-		CyProperty<Properties> cytoscapePropertiesServiceRef = getService(bc, CyProperty.class,
-				"(cyPropertyName=cytoscape3.props)");
-		IconManager iconManager = getService(bc, IconManager.class);
-		
-		// Build Child Panels
-		final OpenSessionPanel openPanel = new OpenSessionPanel(registrar);
-
-		final NewNetworkPanel newNetPanel = new NewNetworkPanel(bc, dialogTaskManagerServiceRef,
-				importNetworkFileTF, importNetworkTF, dsManagerServiceRef, newEmptyNetworkViewFactory);
-		registerAllServices(bc, newNetPanel, new Properties());
-		bc.addBundleListener(newNetPanel);
-
-		// TODO: implement contents
-		final NewsPanel newsPanel = new NewsPanel(cyVersion, iconManager);
-
 		// Show Welcome Screen
-		final WelcomeScreenAction welcomeScreenAction = new WelcomeScreenAction(newNetPanel, openPanel,
-				newsPanel, cytoscapePropertiesServiceRef, cytoscapeDesktop, openBrowserServiceRef);
+		CheckForUpdatesAction welcomeScreenAction = new CheckForUpdatesAction(serviceRegistrar);
 		registerAllServices(bc, welcomeScreenAction, new Properties());
 	}
 }
