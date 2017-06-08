@@ -6,7 +6,6 @@ import java.util.Properties;
 
 import javax.swing.JFrame;
 import javax.swing.SwingUtilities;
-import javax.swing.SwingWorker;
 
 import org.cytoscape.application.CyVersion;
 import org.cytoscape.application.events.CyStartEvent;
@@ -15,10 +14,13 @@ import org.cytoscape.application.swing.AbstractCyAction;
 import org.cytoscape.application.swing.CySwingApplication;
 import org.cytoscape.property.CyProperty;
 import org.cytoscape.service.util.CyServiceRegistrar;
-import org.jsoup.Jsoup;
-import org.jsoup.nodes.Document;
-import org.jsoup.nodes.Element;
-import org.jsoup.select.Elements;
+import org.cytoscape.welcome.internal.task.GetLatestVersionTask;
+import org.cytoscape.work.FinishStatus;
+import org.cytoscape.work.ObservableTask;
+import org.cytoscape.work.Task;
+import org.cytoscape.work.TaskIterator;
+import org.cytoscape.work.TaskObserver;
+import org.cytoscape.work.swing.DialogTaskManager;
 
 /*
  * #%L
@@ -47,134 +49,121 @@ import org.jsoup.select.Elements;
 @SuppressWarnings("serial")
 public class CheckForUpdatesAction extends AbstractCyAction implements CyStartListener {
 
-	private static final String NEWS_URL = "http://chianti.ucsd.edu/cytoscape-news/news.html";
-	
-	public static final String DO_NOT_DISPLAY_PROP_NAME = "hideWelcomeScreen";
-	public static final String TEMP_DO_NOT_DISPLAY_PROP_NAME = "tempHideWelcomeScreen";
-	private static final String NAME = "Check for Updates...";
+	public static final String HIDE_UPDATES_PROP = "hideUpdatesNotification";
+	public static final String HIDE_PROP = "hideWelcomeScreen";
+	public static final String TEMP_HIDE_PROP = "tempHideWelcomeScreen";
+	private static final String NAME = "Check for Updates";
 	private static final String PARENT_NAME = "Help";
 
-	private boolean hide;
-	private UpdatesDialog dialog;
-
+	private final String thisVersion;
+	
 	private final CyServiceRegistrar serviceRegistrar;
 
 	public CheckForUpdatesAction(final CyServiceRegistrar serviceRegistrar) {
 		super(NAME);
 		setPreferredMenu(PARENT_NAME);
-		this.setMenuGravity(1.5f);
+		setMenuGravity(9.999f);
 
 		this.serviceRegistrar = serviceRegistrar;
+		thisVersion = serviceRegistrar.getService(CyVersion.class).getVersion();
 	}
 
 	@Override
 	public void actionPerformed(ActionEvent ae) {
-		new SwingWorker<String, String>() {
-			
-			boolean error = false;
-			String latestVersion = "";
-			
+//		if (isPreRelease(getCurrentVersion()))
+//			SwingUtilities.invokeLater(() -> showDialog(""));
+		
+		final GetLatestVersionTask task = new GetLatestVersionTask();
+		runTask(task, new TaskObserver() {
 			@Override
-			public String doInBackground() {
-				SwingUtilities.invokeLater(() -> showDialog(null));
-				
-				if (!isPreRelease(getCurrentVersion())) {
-					try {
-						latestVersion = getLatestVersion();
-					} catch (Exception e) {
-						e.printStackTrace();
-						error = true;
-					}
-				}
-				
-				return latestVersion;
+			public void taskFinished(ObservableTask task) {
 			}
 			@Override
-			protected void done() {
-				if (dialog != null) {
-					if (error)
-						dialog.showError();
-					else
-						dialog.update(latestVersion);
-					
-					dialog.pack();
+			public void allFinished(FinishStatus finishStatus) {
+				if (finishStatus.getType() == FinishStatus.Type.SUCCEEDED) {
+					String latestVersion = task.getLatestVersion();
+					SwingUtilities.invokeLater(() -> showDialog(latestVersion, false));
 				}
 			}
-		}.execute();
+		});
 	}
 
 	@Override
 	public void handleEvent(CyStartEvent cyStartEvent) {
-		// Displays the dialog after startup based on whether the specified property has been set.
-		final Properties props = getCyProperties();
-		final String hideString = props.getProperty(DO_NOT_DISPLAY_PROP_NAME);
-		hide = parseBoolean(hideString);
-
-		if (!hide) {
-			final String tempHideString = props.getProperty(TEMP_DO_NOT_DISPLAY_PROP_NAME);
-			hide = parseBoolean(tempHideString);
-		}
-
-		if (!hide) {
-			final String systemHideString = System.getProperty(DO_NOT_DISPLAY_PROP_NAME);
-			hide = parseBoolean(systemHideString);
-		}
-
-		// remove this property regardless!
-		props.remove(TEMP_DO_NOT_DISPLAY_PROP_NAME);
-
-		if (!hide) {
-			final String version = getCurrentVersion();
-			
-			if (isPreRelease(version))
-				return; // The current version is a pre-release (snapshot, beta, etc), so let's not bother the user
-			
-			try {
-				String latestVersion = getLatestVersion();
-				
-				// Is the current version up to date?
-				if (!latestVersion.isEmpty() && !version.equals(latestVersion))
-					SwingUtilities.invokeLater(() -> showDialog(latestVersion));
-			} catch (Exception e) {
-				e.printStackTrace();
+		if (isPreRelease(thisVersion))
+			return; // The current version is a pre-release (snapshot, beta, etc), so let's not bother the user
+		
+		final GetLatestVersionTask task = new GetLatestVersionTask();
+		runTask(task, new TaskObserver() {
+			@Override
+			public void taskFinished(ObservableTask task) {
 			}
-		}
+			@Override
+			public void allFinished(FinishStatus finishStatus) {
+				if (finishStatus.getType() == FinishStatus.Type.SUCCEEDED) {
+					// Always check the version when stating Cytoscape, in order to log statistics
+					String latestVersion = task.getLatestVersion();
+					
+					// Displays the dialog after startup based on whether the specified property has been set.
+					boolean hide = false;
+					final Properties props = getCyProperties();
+					
+					// Hide if this version up to date
+					if (latestVersion == null || latestVersion.isEmpty() || thisVersion.equals(latestVersion))
+						hide = true;
+					
+					if (!hide) {
+						final String hideVersion = props.getProperty(HIDE_UPDATES_PROP, "").trim();
+						// If set to "true", always hide, no matter the new version
+						hide = hideVersion.equalsIgnoreCase("true") || hideVersion.equals(latestVersion);
+					}
+					
+					if (!hide) {
+						final String tempHideString = props.getProperty(TEMP_HIDE_PROP);
+						hide = parseBoolean(tempHideString);
+					}
+
+					if (!hide) {
+						final String systemHideString = System.getProperty(HIDE_PROP);
+						hide = parseBoolean(systemHideString);
+					}
+					
+					// Remove this property regardless!
+					props.remove(TEMP_HIDE_PROP);
+					
+					if (!hide)
+						SwingUtilities.invokeLater(() -> showDialog(latestVersion, true));
+				}
+			}
+		});
+	}
+	
+	private void runTask(Task task, TaskObserver observer) {
+		TaskIterator iterator = new TaskIterator(task);
+		serviceRegistrar.getService(DialogTaskManager.class).execute(iterator, observer);
 	}
 
 	private static boolean isPreRelease(final String version) {
 		return version.contains("-");
 	}
 
-	private void showDialog(String latestVersion) {
+	private void showDialog(String latestVersion, boolean hideOptionVisible) {
 		JFrame owner = serviceRegistrar.getService(CySwingApplication.class).getJFrame();
-		dialog = new UpdatesDialog(owner, latestVersion, hide, serviceRegistrar);
+		UpdatesDialog dialog = new UpdatesDialog(owner, thisVersion, latestVersion, hideOptionVisible, serviceRegistrar);
 		dialog.setModalityType(Dialog.ModalityType.APPLICATION_MODAL);
 		dialog.pack();
 		dialog.setLocationRelativeTo(owner);
 		dialog.setVisible(true);
 
-		// Update property
-		hide = dialog.getHideStatus();
-		getCyProperties().setProperty(DO_NOT_DISPLAY_PROP_NAME, ((Boolean) hide).toString());
-		dialog = null;
-	}
-	
-	private String getCurrentVersion() {
-		return serviceRegistrar.getService(CyVersion.class).getVersion();
-	}
-	
-	private String getLatestVersion() throws Exception {
-		Document doc = Jsoup.connect(NEWS_URL).get();
-		Elements metaTags = doc.getElementsByTag("meta");
-		
-		for (Element tag : metaTags) {
-			if ("latestVersion".equals(tag.attr("name")))
-				return tag.attr("content");
+		if (hideOptionVisible) {
+			// Update property
+			if (dialog.getHideStatus())
+				getCyProperties().setProperty(HIDE_UPDATES_PROP, latestVersion);
+			else
+				getCyProperties().remove(HIDE_UPDATES_PROP);
 		}
-
-		return "";
 	}
-
+	
 	private Properties getCyProperties() {
 		return (Properties) serviceRegistrar.getService(CyProperty.class, "(cyPropertyName=cytoscape3.props)")
 				.getProperties();
