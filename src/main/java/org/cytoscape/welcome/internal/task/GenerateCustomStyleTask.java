@@ -1,12 +1,26 @@
 package org.cytoscape.welcome.internal.task;
 
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+
+import org.cytoscape.application.CyApplicationManager;
+import org.cytoscape.model.CyNetwork;
+import org.cytoscape.service.util.CyServiceRegistrar;
+import org.cytoscape.task.analyze.AnalyzeNetworkCollectionTaskFactory;
+import org.cytoscape.view.model.CyNetworkView;
+import org.cytoscape.welcome.internal.VisualStyleBuilder;
+import org.cytoscape.work.AbstractTask;
+import org.cytoscape.work.TaskIterator;
+import org.cytoscape.work.TaskMonitor;
+
 /*
  * #%L
  * Cytoscape Welcome Screen Impl (welcome-impl)
  * $Id:$
  * $HeadURL:$
  * %%
- * Copyright (C) 2006 - 2013 The Cytoscape Consortium
+ * Copyright (C) 2006 - 2017 The Cytoscape Consortium
  * %%
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as 
@@ -24,67 +38,44 @@ package org.cytoscape.welcome.internal.task;
  * #L%
  */
 
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-
-import org.cytoscape.application.CyApplicationManager;
-import org.cytoscape.model.CyNetwork;
-import org.cytoscape.service.util.CyServiceRegistrar;
-import org.cytoscape.task.analyze.AnalyzeNetworkCollectionTaskFactory;
-import org.cytoscape.view.model.CyNetworkView;
-import org.cytoscape.view.vizmap.VisualMappingManager;
-import org.cytoscape.welcome.internal.VisualStyleBuilder;
-import org.cytoscape.work.AbstractTask;
-import org.cytoscape.work.TaskIterator;
-import org.cytoscape.work.TaskMonitor;
-
 public class GenerateCustomStyleTask extends AbstractTask {
 
-	private final CyServiceRegistrar registrar;
-	private final CyApplicationManager applicationManager;
-
 	private final VisualStyleBuilder builder;
-	private final VisualMappingManager vmm;
+	private final CyServiceRegistrar serviceRegistrar;
 
-	GenerateCustomStyleTask(final CyServiceRegistrar registrar,
-			final CyApplicationManager applicationManager, final VisualStyleBuilder builder,
-			final VisualMappingManager vmm) {
-		this.registrar = registrar;
-		this.applicationManager = applicationManager;
+	GenerateCustomStyleTask(final VisualStyleBuilder builder, final CyServiceRegistrar serviceRegistrar) {
 		this.builder = builder;
-		this.vmm = vmm;
+		this.serviceRegistrar = serviceRegistrar;
 	}
 
 	@Override
 	public void run(TaskMonitor taskMonitor) throws Exception {
+		final AnalyzeNetworkCollectionTaskFactory taskFactory; 
 		
-		final AnalyzeNetworkCollectionTaskFactory analyzeNetworkCollectionTaskFactory; 
 		try {
-			analyzeNetworkCollectionTaskFactory = registrar.getService(AnalyzeNetworkCollectionTaskFactory.class); 
-		}
-		catch(Throwable t) {
+			taskFactory = serviceRegistrar.getService(AnalyzeNetworkCollectionTaskFactory.class);
+		} catch (Throwable t) {
 			throw new Exception("Network Analyzer is currently unavailable.\n"
 					+ "Make sure Cytoscape has finished starting up and try again.");
 		}
 
+		final CyApplicationManager applicationManager = serviceRegistrar.getService(CyApplicationManager.class);
 		final List<CyNetworkView> selectedViews = applicationManager.getSelectedNetworkViews();
 		final CyNetworkView currentView = applicationManager.getCurrentNetworkView();
 
-		final Set<CyNetworkView> networkViews = new HashSet<CyNetworkView>(selectedViews);
+		final Set<CyNetworkView> networkViews = new HashSet<>(selectedViews);
 		networkViews.add(currentView);
 
-		final Set<CyNetwork> networks = new HashSet<CyNetwork>();
+		final Set<CyNetwork> networks = new HashSet<>();
 		networks.add(currentView.getModel());
+		
 		for (final CyNetworkView view : selectedViews)
 			networks.add(view.getModel());
 
-		final TaskIterator analyzeItr = analyzeNetworkCollectionTaskFactory.createTaskIterator(networks);
-		final CreateCustomViewTask createCustomViewTask = new CreateCustomViewTask(
-				networkViews, builder, vmm);
+		final TaskIterator iterator = taskFactory.createTaskIterator(networks);
+		final CreateCustomViewTask task = new CreateCustomViewTask(networkViews, builder, serviceRegistrar);
 		
-		insertTasksAfterCurrentTask(createCustomViewTask);
-		insertTasksAfterCurrentTask(analyzeItr);
+		insertTasksAfterCurrentTask(task);
+		insertTasksAfterCurrentTask(iterator);
 	}
-
 }

@@ -1,12 +1,17 @@
 package org.cytoscape.welcome.internal.task;
 
+import org.cytoscape.service.util.CyServiceRegistrar;
+import org.cytoscape.welcome.internal.VisualStyleBuilder;
+import org.cytoscape.work.AbstractTaskFactory;
+import org.cytoscape.work.TaskIterator;
+
 /*
  * #%L
  * Cytoscape Welcome Screen Impl (welcome-impl)
  * $Id:$
  * $HeadURL:$
  * %%
- * Copyright (C) 2006 - 2013 The Cytoscape Consortium
+ * Copyright (C) 2006 - 2017 The Cytoscape Consortium
  * %%
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as 
@@ -24,35 +29,18 @@ package org.cytoscape.welcome.internal.task;
  * #L%
  */
 
-import org.cytoscape.application.CyApplicationManager;
-import org.cytoscape.service.util.CyServiceRegistrar;
-import org.cytoscape.view.vizmap.VisualMappingManager;
-import org.cytoscape.welcome.internal.VisualStyleBuilder;
-import org.cytoscape.work.AbstractTaskFactory;
-import org.cytoscape.work.TaskIterator;
-
 public class GenerateCustomStyleTaskFactory extends AbstractTaskFactory {
 
-	private final CyServiceRegistrar registrar;
-	private final CyApplicationManager applicationManager;
-
 	private final VisualStyleBuilder builder;
-	private final VisualMappingManager vmm;
+	private final CyServiceRegistrar serviceRegistrar;
 
-	public GenerateCustomStyleTaskFactory(
-			final CyServiceRegistrar registrar,
-			final CyApplicationManager applicationManager, final VisualStyleBuilder builder,
-			final VisualMappingManager vmm) {
-		this.registrar = registrar;
-		this.applicationManager = applicationManager;
+	public GenerateCustomStyleTaskFactory(final VisualStyleBuilder builder, final CyServiceRegistrar serviceRegistrar) {
 		this.builder = builder;
-		this.vmm = vmm;
+		this.serviceRegistrar = serviceRegistrar;
 	}
 
 	@Override
 	public TaskIterator createTaskIterator() {
-		return new TaskIterator(new GenerateCustomStyleTask(registrar, applicationManager,
-				builder, vmm));
+		return new TaskIterator(new GenerateCustomStyleTask(builder, serviceRegistrar));
 	}
-
 }

@@ -1,12 +1,23 @@
 package org.cytoscape.welcome.internal.task;
 
+import java.util.Collection;
+
+import org.cytoscape.model.CyNetwork;
+import org.cytoscape.service.util.CyServiceRegistrar;
+import org.cytoscape.task.AbstractNetworkViewCollectionTask;
+import org.cytoscape.view.model.CyNetworkView;
+import org.cytoscape.view.vizmap.VisualMappingManager;
+import org.cytoscape.view.vizmap.VisualStyle;
+import org.cytoscape.welcome.internal.VisualStyleBuilder;
+import org.cytoscape.work.TaskMonitor;
+
 /*
  * #%L
  * Cytoscape Welcome Screen Impl (welcome-impl)
  * $Id:$
  * $HeadURL:$
  * %%
- * Copyright (C) 2006 - 2013 The Cytoscape Consortium
+ * Copyright (C) 2006 - 2017 The Cytoscape Consortium
  * %%
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as 
@@ -24,48 +35,42 @@ package org.cytoscape.welcome.internal.task;
  * #L%
  */
 
-import java.util.Collection;
-
-import org.cytoscape.model.CyNetwork;
-import org.cytoscape.task.AbstractNetworkViewCollectionTask;
-import org.cytoscape.view.model.CyNetworkView;
-import org.cytoscape.view.vizmap.VisualMappingManager;
-import org.cytoscape.view.vizmap.VisualStyle;
-import org.cytoscape.welcome.internal.VisualStyleBuilder;
-import org.cytoscape.work.TaskMonitor;
-
 public class CreateCustomViewTask extends AbstractNetworkViewCollectionTask {
 
 	private final VisualStyleBuilder builder;
-	private final VisualMappingManager vmm;
+	private final CyServiceRegistrar serviceRegistrar;
 
-	public CreateCustomViewTask(final Collection<CyNetworkView> networkViews,
-			final VisualStyleBuilder builder, final VisualMappingManager vmm) {
+	public CreateCustomViewTask(
+			final Collection<CyNetworkView> networkViews,
+			final VisualStyleBuilder builder,
+			final CyServiceRegistrar serviceRegistrar
+	) {
 		super(networkViews);
 		this.builder = builder;
-		this.vmm = vmm;
+		this.serviceRegistrar = serviceRegistrar;
 	}
 
 	@Override
-	public void run(TaskMonitor taskMonitor) throws Exception {
-		taskMonitor.setTitle("Visualizing Network");
+	public void run(TaskMonitor tm) throws Exception {
+		tm.setTitle("Visualizing Network");
+
+		VisualMappingManager vmManager = serviceRegistrar.getService(VisualMappingManager.class);
 
 		double progress = 0.0d;
-		taskMonitor.setProgress(progress);
+		tm.setProgress(progress);
 		final double increment = 1.0d / networkViews.size();
 
-		for (final CyNetworkView networkView : networkViews) {
-			final CyNetwork network = networkView.getModel();
-			taskMonitor.setStatusMessage("Visualizing " + network.getRow(network).get(CyNetwork.NAME, String.class));
+		for (final CyNetworkView netView : networkViews) {
+			final CyNetwork network = netView.getModel();
+			tm.setStatusMessage("Visualizing " + network.getRow(network).get(CyNetwork.NAME, String.class));
 
-			final VisualStyle newStyle = builder.buildVisualStyle(networkView);
-			vmm.addVisualStyle(newStyle);
-			vmm.setCurrentVisualStyle(newStyle);
-			newStyle.apply(networkView);
-			networkView.updateView();
+			final VisualStyle newStyle = builder.buildVisualStyle(netView);
+			vmManager.addVisualStyle(newStyle);
+			vmManager.setCurrentVisualStyle(newStyle);
+			newStyle.apply(netView);
+			netView.updateView();
 
 			progress += increment;
 		}
-
 	}
 }

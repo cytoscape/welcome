@@ -7,13 +7,8 @@ import static org.cytoscape.work.ServiceProperties.TITLE;
 
 import java.util.Properties;
 
-import org.cytoscape.application.CyApplicationManager;
 import org.cytoscape.service.util.AbstractCyActivator;
 import org.cytoscape.service.util.CyServiceRegistrar;
-import org.cytoscape.view.presentation.property.values.BendFactory;
-import org.cytoscape.view.vizmap.VisualMappingFunctionFactory;
-import org.cytoscape.view.vizmap.VisualMappingManager;
-import org.cytoscape.view.vizmap.VisualStyleFactory;
 import org.cytoscape.welcome.internal.task.GenerateCustomStyleTaskFactory;
 import org.cytoscape.welcome.internal.view.CheckForUpdatesAction;
 import org.cytoscape.work.ServiceProperties;
@@ -48,32 +43,18 @@ public class CyActivator extends AbstractCyActivator{
 	@Override
 	public void start(BundleContext bc) {
 		CyServiceRegistrar serviceRegistrar = getService(bc, CyServiceRegistrar.class);
-		CyApplicationManager applicationManager = getService(bc, CyApplicationManager.class);
 		
-		BendFactory bendFactory = getService(bc, BendFactory.class);
-		VisualMappingManager vmm = getService(bc, VisualMappingManager.class);
-		VisualStyleFactory vsFactoryServiceRef = getService(bc, VisualStyleFactory.class);
-		VisualMappingFunctionFactory continupousMappingFactoryRef = getService(bc, VisualMappingFunctionFactory.class,
-				"(mapping.type=continuous)");
-		VisualMappingFunctionFactory passthroughMappingFactoryRef = getService(bc, VisualMappingFunctionFactory.class,
-				"(mapping.type=passthrough)");
-		VisualMappingFunctionFactory discreteMappingFactoryRef = getService(bc, VisualMappingFunctionFactory.class,
-				"(mapping.type=discrete)");
-		
-		VisualStyleBuilder vsBuilder = new VisualStyleBuilder(vsFactoryServiceRef, continupousMappingFactoryRef,
-				discreteMappingFactoryRef, passthroughMappingFactoryRef, bendFactory);
+		VisualStyleBuilder vsBuilder = new VisualStyleBuilder(serviceRegistrar);
 	
 		{
 			// Export preset tasks
-			GenerateCustomStyleTaskFactory factory = new GenerateCustomStyleTaskFactory(
-					serviceRegistrar, applicationManager, vsBuilder, vmm);
+			GenerateCustomStyleTaskFactory factory = new GenerateCustomStyleTaskFactory(vsBuilder, serviceRegistrar);
 			Properties props = new Properties();
 			props.setProperty(PREFERRED_MENU, "Tools.Workflow[3.0]");
 			props.setProperty(MENU_GRAVITY, "20.0");
 			props.setProperty(TITLE, "Analyze selected networks and create custom styles");
 			props.setProperty(IN_TOOL_BAR, "false");
 			props.setProperty(ServiceProperties.ENABLE_FOR, "networkAndView");
-			
 			registerAllServices(bc, factory, props);
 		}
 		

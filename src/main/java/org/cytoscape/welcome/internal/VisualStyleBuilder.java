@@ -1,12 +1,36 @@
 package org.cytoscape.welcome.internal;
 
+import java.awt.Color;
+import java.awt.Font;
+import java.awt.Paint;
+import java.util.List;
+import java.util.Set;
+
+import org.cytoscape.model.CyColumn;
+import org.cytoscape.model.CyNetwork;
+import org.cytoscape.model.CyRow;
+import org.cytoscape.model.CyTable;
+import org.cytoscape.service.util.CyServiceRegistrar;
+import org.cytoscape.view.model.CyNetworkView;
+import org.cytoscape.view.presentation.property.BasicVisualLexicon;
+import org.cytoscape.view.presentation.property.NodeShapeVisualProperty;
+import org.cytoscape.view.presentation.property.values.Bend;
+import org.cytoscape.view.presentation.property.values.BendFactory;
+import org.cytoscape.view.vizmap.VisualMappingFunctionFactory;
+import org.cytoscape.view.vizmap.VisualPropertyDependency;
+import org.cytoscape.view.vizmap.VisualStyle;
+import org.cytoscape.view.vizmap.VisualStyleFactory;
+import org.cytoscape.view.vizmap.mappings.BoundaryRangeValues;
+import org.cytoscape.view.vizmap.mappings.ContinuousMapping;
+import org.cytoscape.view.vizmap.mappings.PassthroughMapping;
+
 /*
  * #%L
  * Cytoscape Welcome Screen Impl (welcome-impl)
  * $Id:$
  * $HeadURL:$
  * %%
- * Copyright (C) 2006 - 2013 The Cytoscape Consortium
+ * Copyright (C) 2006 - 2017 The Cytoscape Consortium
  * %%
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as 
@@ -23,29 +47,6 @@ package org.cytoscape.welcome.internal;
  * <http://www.gnu.org/licenses/lgpl-2.1.html>.
  * #L%
  */
-
-import java.awt.Color;
-import java.awt.Font;
-import java.awt.Paint;
-import java.util.List;
-import java.util.Set;
-
-import org.cytoscape.model.CyColumn;
-import org.cytoscape.model.CyNetwork;
-import org.cytoscape.model.CyRow;
-import org.cytoscape.model.CyTable;
-import org.cytoscape.view.model.CyNetworkView;
-import org.cytoscape.view.presentation.property.BasicVisualLexicon;
-import org.cytoscape.view.presentation.property.NodeShapeVisualProperty;
-import org.cytoscape.view.presentation.property.values.Bend;
-import org.cytoscape.view.presentation.property.values.BendFactory;
-import org.cytoscape.view.vizmap.VisualMappingFunctionFactory;
-import org.cytoscape.view.vizmap.VisualPropertyDependency;
-import org.cytoscape.view.vizmap.VisualStyle;
-import org.cytoscape.view.vizmap.VisualStyleFactory;
-import org.cytoscape.view.vizmap.mappings.BoundaryRangeValues;
-import org.cytoscape.view.vizmap.mappings.ContinuousMapping;
-import org.cytoscape.view.vizmap.mappings.PassthroughMapping;
 
 public class VisualStyleBuilder {
 
@@ -76,38 +77,32 @@ public class VisualStyleBuilder {
 	// Bend definition. We can tweak this value later.
 	private static final String EDGE_BEND_DEFINITION = "0.8117209636412094,0.5840454410278249,0.6715391110621636";
 
-	private final VisualStyleFactory vsFactory;
-	private final BendFactory bendFactory;
+	private final CyServiceRegistrar serviceRegistrar;
 
-	private final VisualMappingFunctionFactory continupousMappingFactory;
-	private final VisualMappingFunctionFactory discreteMappingFactory;
-	private final VisualMappingFunctionFactory passthroughMappingFactory;
-
-	public VisualStyleBuilder(
-			final VisualStyleFactory vsFactory,
-			final VisualMappingFunctionFactory continupousMappingFactory,
-			final VisualMappingFunctionFactory discreteMappingFactory,
-			final VisualMappingFunctionFactory passthroughMappingFactory,
-			final BendFactory bendFactory
-	) {
-		this.vsFactory = vsFactory;
-		this.continupousMappingFactory = continupousMappingFactory;
-		this.discreteMappingFactory = discreteMappingFactory;
-		this.passthroughMappingFactory = passthroughMappingFactory;
-		this.bendFactory = bendFactory;
+	public VisualStyleBuilder(CyServiceRegistrar serviceRegistrar) {
+		this.serviceRegistrar = serviceRegistrar;
 	}
 
+	@SuppressWarnings("unchecked")
 	public final VisualStyle buildVisualStyle(final CyNetworkView networkView) {
 		final CyNetwork network = networkView.getModel();
 		final String networkName = network.getRow(network).get(CyNetwork.NAME, String.class);
-		final VisualStyle visualStyle = vsFactory.createVisualStyle("NetworkAnalyzer Style: " + networkName);
+		
+		final VisualStyleFactory styleFactory = serviceRegistrar.getService(VisualStyleFactory.class);
+		final BendFactory bendFactory = serviceRegistrar.getService(BendFactory.class);
+		final VisualMappingFunctionFactory cmFactory =
+				serviceRegistrar.getService(VisualMappingFunctionFactory.class, "(mapping.type=continuous)");
+		final VisualMappingFunctionFactory pmFactory =
+				serviceRegistrar.getService(VisualMappingFunctionFactory.class, "(mapping.type=passthrough)");
+		
+		final VisualStyle visualStyle = styleFactory.createVisualStyle("NetworkAnalyzer Style: " + networkName);
 
 		// Network VP
 		final Color backGroundColor = Color.white;
 		visualStyle.setDefaultValue(BasicVisualLexicon.NETWORK_BACKGROUND_PAINT, backGroundColor);
 
 		// Node Label Mapping
-		final PassthroughMapping<String, String> labelPassthrough = (PassthroughMapping<String, String>) passthroughMappingFactory
+		final PassthroughMapping<String, String> labelPassthrough = (PassthroughMapping<String, String>) pmFactory
 				.createVisualMappingFunction(CyNetwork.NAME, String.class, BasicVisualLexicon.NODE_LABEL);
 		visualStyle.addVisualMappingFunction(labelPassthrough);
 
@@ -137,11 +132,11 @@ public class VisualStyleBuilder {
 		// Node Color
 		final CyColumn col = network.getDefaultNodeTable().getColumn(NODE_COLOR_COLUMN);
 		Class<?> attrValueType = col.getType();
-		@SuppressWarnings("unchecked")
-		final ContinuousMapping<Double, Paint> conMapNodeColor = ((ContinuousMapping<Double, Paint>) continupousMappingFactory
+		
+		final ContinuousMapping<Double, Paint> conMapNodeColor = ((ContinuousMapping<Double, Paint>) cmFactory
 				.createVisualMappingFunction(NODE_COLOR_COLUMN, attrValueType, BasicVisualLexicon.NODE_FILL_COLOR));
-		final BoundaryRangeValues<Paint> bv0 = new BoundaryRangeValues<Paint>(Color.white, Color.white, Color.white);
-		final BoundaryRangeValues<Paint> bv1 = new BoundaryRangeValues<Paint>(NODE_MAPPING_COLOR, NODE_MAPPING_COLOR,
+		final BoundaryRangeValues<Paint> bv0 = new BoundaryRangeValues<>(Color.white, Color.white, Color.white);
+		final BoundaryRangeValues<Paint> bv1 = new BoundaryRangeValues<>(NODE_MAPPING_COLOR, NODE_MAPPING_COLOR,
 				NODE_MAPPING_COLOR);
 		final Double min = pickMin(network.getDefaultNodeTable(), col);
 		final Double max = pickMax(network.getDefaultNodeTable(), col);
@@ -152,11 +147,11 @@ public class VisualStyleBuilder {
 		// Node Size
 		final CyColumn nodeSizeCol = network.getDefaultNodeTable().getColumn(NODE_SIZE_COLUMN);
 		Class<?> nodeSizeColType = nodeSizeCol.getType();
-		@SuppressWarnings("unchecked")
-		final ContinuousMapping<Double, Double> conMapNodeSize = ((ContinuousMapping<Double, Double>) continupousMappingFactory
+		
+		final ContinuousMapping<Double, Double> conMapNodeSize = ((ContinuousMapping<Double, Double>) cmFactory
 				.createVisualMappingFunction(NODE_SIZE_COLUMN, nodeSizeColType, BasicVisualLexicon.NODE_SIZE));
-		final BoundaryRangeValues<Double> bvns0 = new BoundaryRangeValues<Double>(10d, 10d, 10d);
-		final BoundaryRangeValues<Double> bvns1 = new BoundaryRangeValues<Double>(100d, 100d, 100d);
+		final BoundaryRangeValues<Double> bvns0 = new BoundaryRangeValues<>(10d, 10d, 10d);
+		final BoundaryRangeValues<Double> bvns1 = new BoundaryRangeValues<>(100d, 100d, 100d);
 
 		conMapNodeSize.addPoint(min, bvns0);
 		conMapNodeSize.addPoint(max, bvns1);
@@ -165,12 +160,12 @@ public class VisualStyleBuilder {
 		// Node Label Size
 		final CyColumn nodeLabelSizeCol = network.getDefaultNodeTable().getColumn(NODE_LABEL_SIZE_COLUMN);
 		Class<?> nodeLabelSizeColType = nodeLabelSizeCol.getType();
-		@SuppressWarnings("unchecked")
-		final ContinuousMapping<Double, Integer> conMapNodeLabelSize = ((ContinuousMapping<Double, Integer>) continupousMappingFactory
+		
+		final ContinuousMapping<Double, Integer> conMapNodeLabelSize = ((ContinuousMapping<Double, Integer>) cmFactory
 				.createVisualMappingFunction(NODE_LABEL_SIZE_COLUMN, nodeLabelSizeColType,
 						BasicVisualLexicon.NODE_LABEL_FONT_SIZE));
-		final BoundaryRangeValues<Integer> bvnls0 = new BoundaryRangeValues<Integer>(10, 10, 10);
-		final BoundaryRangeValues<Integer> bvnls1 = new BoundaryRangeValues<Integer>(100, 100, 100);
+		final BoundaryRangeValues<Integer> bvnls0 = new BoundaryRangeValues<>(10, 10, 10);
+		final BoundaryRangeValues<Integer> bvnls1 = new BoundaryRangeValues<>(100, 100, 100);
 		// FIXME: replace min&max if you use different column
 		conMapNodeLabelSize.addPoint(min, bvnls0);
 		conMapNodeLabelSize.addPoint(max, bvnls1);
@@ -179,11 +174,11 @@ public class VisualStyleBuilder {
 		// Edge Width
 		final CyColumn edgeWidthCol = network.getDefaultEdgeTable().getColumn(EDGE_WIDTH_COLUMN);
 		final Class<?> edgeWidthColType = edgeWidthCol.getType();
-		@SuppressWarnings("unchecked")
-		final ContinuousMapping<Double, Double> conMapEdgeWidth = ((ContinuousMapping<Double, Double>) continupousMappingFactory
+		
+		final ContinuousMapping<Double, Double> conMapEdgeWidth = ((ContinuousMapping<Double, Double>) cmFactory
 				.createVisualMappingFunction(EDGE_WIDTH_COLUMN, edgeWidthColType, BasicVisualLexicon.EDGE_WIDTH));
-		final BoundaryRangeValues<Double> bvew0 = new BoundaryRangeValues<Double>(1d, 1d, 1d);
-		final BoundaryRangeValues<Double> bvew1 = new BoundaryRangeValues<Double>(12d, 12d, 12d);
+		final BoundaryRangeValues<Double> bvew0 = new BoundaryRangeValues<>(1d, 1d, 1d);
+		final BoundaryRangeValues<Double> bvew1 = new BoundaryRangeValues<>(12d, 12d, 12d);
 		final Double minEdge = pickMin(network.getDefaultEdgeTable(), edgeWidthCol);
 		final Double maxEdge = pickMax(network.getDefaultEdgeTable(), edgeWidthCol);
 
@@ -194,11 +189,11 @@ public class VisualStyleBuilder {
 		// Edge transparency
 		final CyColumn edgeTransCol = network.getDefaultEdgeTable().getColumn(EDGE_WIDTH_COLUMN);
 		final Class<?> edgeTransColType = edgeTransCol.getType();
-		@SuppressWarnings("unchecked")
-		final ContinuousMapping<Double, Integer> conMapEdgeTrans = ((ContinuousMapping<Double, Integer>) continupousMappingFactory
+		
+		final ContinuousMapping<Double, Integer> conMapEdgeTrans = ((ContinuousMapping<Double, Integer>) cmFactory
 				.createVisualMappingFunction(EDGE_WIDTH_COLUMN, edgeTransColType, BasicVisualLexicon.EDGE_TRANSPARENCY));
-		final BoundaryRangeValues<Integer> bvet0 = new BoundaryRangeValues<Integer>(80, 80, 80);
-		final BoundaryRangeValues<Integer> bvet1 = new BoundaryRangeValues<Integer>(220, 220, 220);
+		final BoundaryRangeValues<Integer> bvet0 = new BoundaryRangeValues<>(80, 80, 80);
+		final BoundaryRangeValues<Integer> bvet1 = new BoundaryRangeValues<>(220, 220, 220);
 		conMapEdgeTrans.addPoint(minEdge, bvet0);
 		conMapEdgeTrans.addPoint(maxEdge, bvet1);
 		visualStyle.addVisualMappingFunction(conMapEdgeTrans);
@@ -206,13 +201,13 @@ public class VisualStyleBuilder {
 		// Edge Color
 		final CyColumn edgeColorCol = network.getDefaultEdgeTable().getColumn(EDGE_COLOR_COLUMN);
 		final Class<?> edgeColorColType = edgeColorCol.getType();
-		@SuppressWarnings("unchecked")
-		final ContinuousMapping<Double, Paint> conMapEdgeColor = ((ContinuousMapping<Double, Paint>) continupousMappingFactory
+		
+		final ContinuousMapping<Double, Paint> conMapEdgeColor = ((ContinuousMapping<Double, Paint>) cmFactory
 				.createVisualMappingFunction(EDGE_COLOR_COLUMN, edgeColorColType,
 						BasicVisualLexicon.EDGE_STROKE_UNSELECTED_PAINT));
-		final BoundaryRangeValues<Paint> bvec0 = new BoundaryRangeValues<Paint>(EDGE_MAPPING_MIN_COLOR,
+		final BoundaryRangeValues<Paint> bvec0 = new BoundaryRangeValues<>(EDGE_MAPPING_MIN_COLOR,
 				EDGE_MAPPING_MIN_COLOR, EDGE_MAPPING_MIN_COLOR);
-		final BoundaryRangeValues<Paint> bvec1 = new BoundaryRangeValues<Paint>(EDGE_MAPPING_MAX_COLOR,
+		final BoundaryRangeValues<Paint> bvec1 = new BoundaryRangeValues<>(EDGE_MAPPING_MAX_COLOR,
 				EDGE_MAPPING_MAX_COLOR, EDGE_MAPPING_MAX_COLOR);
 		conMapEdgeColor.addPoint(minEdge, bvec0);
 		conMapEdgeColor.addPoint(maxEdge, bvec1);
@@ -220,6 +215,7 @@ public class VisualStyleBuilder {
 
 		// Set Lock
 		Set<VisualPropertyDependency<?>> deps = visualStyle.getAllVisualPropertyDependencies();
+		
 		for (VisualPropertyDependency<?> dep : deps) {
 			final String depName = dep.getIdString();
 			if (depName.equals("nodeSizeLocked"))
@@ -231,34 +227,39 @@ public class VisualStyleBuilder {
 
 	private Double pickMin(final CyTable table, final CyColumn column) {
 		final List<CyRow> rows = table.getAllRows();
-
 		Double minNumber = Double.POSITIVE_INFINITY;
+		
 		for (CyRow row : rows) {
 			final Object rawValue = row.get(column.getName(), column.getType());
+			
 			if (rawValue == null)
 				continue;
 
 			Double value = ((Number) rawValue).doubleValue();
+			
 			if (value < minNumber)
 				minNumber = value;
 		}
+		
 		return minNumber;
 	}
 
 	private Double pickMax(final CyTable table, final CyColumn column) {
 		final List<CyRow> rows = table.getAllRows();
-
 		Double maxNumber = Double.NEGATIVE_INFINITY;
+		
 		for (CyRow row : rows) {
 			final Object rawValue = row.get(column.getName(), column.getType());
+			
 			if (rawValue == null)
 				continue;
 
 			Double value = ((Number) rawValue).doubleValue();
+			
 			if (value > maxNumber)
 				maxNumber = value;
 		}
+		
 		return maxNumber;
 	}
-
 }
