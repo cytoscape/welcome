@@ -49,13 +49,13 @@ import org.cytoscape.work.swing.DialogTaskManager;
 @SuppressWarnings("serial")
 public class CheckForUpdatesAction extends AbstractCyAction implements CyStartListener {
 
-	public static final String HIDE_UPDATES_PROP = "hideUpdatesNotification";
-	public static final String HIDE_PROP = "hideWelcomeScreen";
-	public static final String TEMP_HIDE_PROP = "tempHideWelcomeScreen";
+	private static final String HIDE_UPDATES_PROP = "hideUpdatesNotification";
+	private static final String TEMP_HIDE_PROP = "tempHideWelcomeScreen";
 	private static final String NAME = "Check for Updates";
 	private static final String PARENT_NAME = "Help";
 
 	private final String thisVersion;
+	private String latestVersion;
 	
 	private final CyServiceRegistrar serviceRegistrar;
 
@@ -70,29 +70,11 @@ public class CheckForUpdatesAction extends AbstractCyAction implements CyStartLi
 
 	@Override
 	public void actionPerformed(ActionEvent ae) {
-//		if (isPreRelease(getCurrentVersion()))
-//			SwingUtilities.invokeLater(() -> showDialog(""));
-		
-		final GetLatestVersionTask task = new GetLatestVersionTask();
-		runTask(task, new TaskObserver() {
-			@Override
-			public void taskFinished(ObservableTask task) {
-			}
-			@Override
-			public void allFinished(FinishStatus finishStatus) {
-				if (finishStatus.getType() == FinishStatus.Type.SUCCEEDED) {
-					String latestVersion = task.getLatestVersion();
-					SwingUtilities.invokeLater(() -> showDialog(latestVersion, false));
-				}
-			}
-		});
+		SwingUtilities.invokeLater(() -> showDialog(false));
 	}
 
 	@Override
 	public void handleEvent(CyStartEvent cyStartEvent) {
-		if (isPreRelease(thisVersion))
-			return; // The current version is a pre-release (snapshot, beta, etc), so let's not bother the user
-		
 		final GetLatestVersionTask task = new GetLatestVersionTask();
 		runTask(task, new TaskObserver() {
 			@Override
@@ -102,14 +84,16 @@ public class CheckForUpdatesAction extends AbstractCyAction implements CyStartLi
 			public void allFinished(FinishStatus finishStatus) {
 				if (finishStatus.getType() == FinishStatus.Type.SUCCEEDED) {
 					// Always check the version when stating Cytoscape, in order to log statistics
-					String latestVersion = task.getLatestVersion();
+					latestVersion = task.getLatestVersion();
 					
 					// Displays the dialog after startup based on whether the specified property has been set.
 					boolean hide = false;
 					final Properties props = getCyProperties();
 					
-					// Hide if this version up to date
-					if (latestVersion == null || latestVersion.isEmpty() || thisVersion.equals(latestVersion))
+					// Hide if this version up to date or the current version is a pre-release (snapshot, beta, etc).
+					// We don't want to bother the user unless there is a new version to download!
+					if (latestVersion == null || latestVersion.isEmpty() || thisVersion.equals(latestVersion)
+							|| isPreRelease(thisVersion))  
 						hide = true;
 					
 					if (!hide) {
@@ -123,16 +107,11 @@ public class CheckForUpdatesAction extends AbstractCyAction implements CyStartLi
 						hide = parseBoolean(tempHideString);
 					}
 
-					if (!hide) {
-						final String systemHideString = System.getProperty(HIDE_PROP);
-						hide = parseBoolean(systemHideString);
-					}
-					
 					// Remove this property regardless!
 					props.remove(TEMP_HIDE_PROP);
 					
 					if (!hide)
-						SwingUtilities.invokeLater(() -> showDialog(latestVersion, true));
+						SwingUtilities.invokeLater(() -> showDialog(true));
 				}
 			}
 		});
@@ -147,7 +126,7 @@ public class CheckForUpdatesAction extends AbstractCyAction implements CyStartLi
 		return version.contains("-");
 	}
 
-	private void showDialog(String latestVersion, boolean hideOptionVisible) {
+	private void showDialog(boolean hideOptionVisible) {
 		JFrame owner = serviceRegistrar.getService(CySwingApplication.class).getJFrame();
 		UpdatesDialog dialog = new UpdatesDialog(owner, thisVersion, latestVersion, hideOptionVisible, serviceRegistrar);
 		dialog.setModalityType(Dialog.ModalityType.APPLICATION_MODAL);
