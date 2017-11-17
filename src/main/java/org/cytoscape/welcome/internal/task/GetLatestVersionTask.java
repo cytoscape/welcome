@@ -1,7 +1,12 @@
 package org.cytoscape.welcome.internal.task;
 
+import java.net.UnknownHostException;
+
+import org.apache.log4j.Logger;
+import org.cytoscape.application.CyUserLog;
 import org.cytoscape.work.AbstractTask;
 import org.cytoscape.work.TaskMonitor;
+import org.cytoscape.work.TaskMonitor.Level;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
@@ -39,14 +44,27 @@ public class GetLatestVersionTask extends AbstractTask {
 	
 	@Override
 	public void run(TaskMonitor tm) throws Exception {
-		Document doc = Jsoup.connect(NEWS_URL).get();
-		Elements metaTags = doc.getElementsByTag("meta");
+		tm.setTitle("Get Latest Cytoscape Version");
 		
-		for (Element tag : metaTags) {
-			if ("latestVersion".equals(tag.attr("name"))) {
-				latestVersion = tag.attr("content");
-				break;
+		// Don't throw an exception here (e.g. connection problem)! We don't want to block the UI
+		// with a modal error dialog when Cytoscape is starting up, specially when this is simply checking
+		// the latest version, which is not a critical task.
+		try {
+			Document doc = Jsoup.connect(NEWS_URL).get();
+			Elements metaTags = doc.getElementsByTag("meta");
+			
+			for (Element tag : metaTags) {
+				if ("latestVersion".equals(tag.attr("name"))) {
+					latestVersion = tag.attr("content");
+					break;
+				}
 			}
+		} catch (UnknownHostException e) {
+			Logger.getLogger(CyUserLog.NAME).warn("Cannot find host (please check your Internet connection).", e);
+			tm.showMessage(Level.WARN, "Cannot find host (please check your Internet connection): " + e.getMessage());
+		} catch (Exception e) {
+			Logger.getLogger(CyUserLog.NAME).error("Unexpected error when getting latest Cytoscape version.", e);
+			tm.showMessage(Level.ERROR, "Unexpected error: " + e.getMessage());
 		}
 	}
 
