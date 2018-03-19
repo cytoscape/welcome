@@ -75,22 +75,17 @@ public class CheckForUpdatesAction extends AbstractCyAction implements CyStartLi
 
 	@Override
 	public void handleEvent(CyStartEvent cyStartEvent) {
-		getLatestVersion();
-	}
-
-	private void getLatestVersion(){
 		final GetLatestVersionTask task = new GetLatestVersionTask();
 		runTask(task, new TaskObserver() {
 			@Override
 			public void taskFinished(ObservableTask task) {
-
 			}
-
 			@Override
 			public void allFinished(FinishStatus finishStatus) {
 				if (finishStatus.getType() == FinishStatus.Type.SUCCEEDED) {
 					// Always check the version when stating Cytoscape, in order to log statistics
 					latestVersion = task.getLatestVersion();
+					
 					// Displays the dialog after startup based on whether the specified property has been set.
 					boolean hide = false;
 					final Properties props = getCyProperties();
@@ -153,13 +148,6 @@ public class CheckForUpdatesAction extends AbstractCyAction implements CyStartLi
 				.getProperties();
 	}
 	
-	@Override
-	public boolean isEnabled() {
-		if (latestVersion == null)
-			getLatestVersion();
-		return latestVersion != null;
-	}
-
 	private static boolean parseBoolean(String hideString) {
 		boolean lhide = false;
 		

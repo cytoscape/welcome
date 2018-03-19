@@ -111,10 +111,6 @@ public class UpdatesDialog extends JDialog {
 					downloadEnabled = true;
 				}
 			}
-		}else{
-			statusIconLabel.setText(IconManager.ICON_EXCLAMATION_TRIANGLE);
-			statusIconLabel.setForeground(LookAndFeelUtil.getErrorColor());
-			statusLabel.setText("Unable to get current version. Are you connected to the internet?");
 		}
 		
 		final JPanel bottomPanel;
