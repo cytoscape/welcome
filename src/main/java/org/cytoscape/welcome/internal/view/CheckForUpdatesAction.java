@@ -53,11 +53,10 @@ public class CheckForUpdatesAction extends AbstractCyAction implements CyStartLi
 	private static final String TEMP_HIDE_PROP = "tempHideWelcomeScreen";
 	private static final String NAME = "Check for Updates";
 	private static final String PARENT_NAME = "Help";
-	private static UpdatesDialog dialog;
 
 	private final String thisVersion;
 	private String latestVersion;
-
+	
 	private final CyServiceRegistrar serviceRegistrar;
 
 	public CheckForUpdatesAction(final CyServiceRegistrar serviceRegistrar) {
@@ -79,7 +78,7 @@ public class CheckForUpdatesAction extends AbstractCyAction implements CyStartLi
 		getLatestVersion();
 	}
 
-	private void getLatestVersion() {
+	private void getLatestVersion(){
 		final GetLatestVersionTask task = new GetLatestVersionTask();
 		runTask(task, new TaskObserver() {
 			@Override
@@ -90,29 +89,24 @@ public class CheckForUpdatesAction extends AbstractCyAction implements CyStartLi
 			@Override
 			public void allFinished(FinishStatus finishStatus) {
 				if (finishStatus.getType() == FinishStatus.Type.SUCCEEDED) {
-					// Always check the version when stating Cytoscape, in order
-					// to log statistics
+					// Always check the version when stating Cytoscape, in order to log statistics
 					latestVersion = task.getLatestVersion();
-					// Displays the dialog after startup based on whether the
-					// specified property has been set.
+					// Displays the dialog after startup based on whether the specified property has been set.
 					boolean hide = false;
 					final Properties props = getCyProperties();
-
-					// Hide if this version up to date or the current version is
-					// a pre-release (snapshot, beta, etc).
-					// We don't want to bother the user unless there is a new
-					// version to download!
+					
+					// Hide if this version up to date or the current version is a pre-release (snapshot, beta, etc).
+					// We don't want to bother the user unless there is a new version to download!
 					if (latestVersion == null || latestVersion.isEmpty() || thisVersion.equals(latestVersion)
-							|| isPreRelease(thisVersion))
+							|| isPreRelease(thisVersion))  
 						hide = true;
-
+					
 					if (!hide) {
 						final String hideVersion = props.getProperty(HIDE_UPDATES_PROP, "").trim();
-						// If set to "true", always hide, no matter the new
-						// version
+						// If set to "true", always hide, no matter the new version
 						hide = hideVersion.equalsIgnoreCase("true") || hideVersion.equals(latestVersion);
 					}
-
+					
 					if (!hide) {
 						final String tempHideString = props.getProperty(TEMP_HIDE_PROP);
 						hide = parseBoolean(tempHideString);
@@ -120,14 +114,14 @@ public class CheckForUpdatesAction extends AbstractCyAction implements CyStartLi
 
 					// Remove this property regardless!
 					props.remove(TEMP_HIDE_PROP);
-
+					
 					if (!hide)
 						SwingUtilities.invokeLater(() -> showDialog(true));
 				}
 			}
 		});
 	}
-
+	
 	private void runTask(Task task, TaskObserver observer) {
 		TaskIterator iterator = new TaskIterator(task);
 		serviceRegistrar.getService(DialogTaskManager.class).execute(iterator, observer);
@@ -139,11 +133,9 @@ public class CheckForUpdatesAction extends AbstractCyAction implements CyStartLi
 
 	private void showDialog(boolean hideOptionVisible) {
 		JFrame owner = serviceRegistrar.getService(CySwingApplication.class).getJFrame();
-		if (dialog == null) {
-			dialog = new UpdatesDialog(owner, thisVersion, latestVersion, hideOptionVisible, serviceRegistrar);
-			dialog.setModalityType(Dialog.ModalityType.APPLICATION_MODAL);
-			dialog.pack();
-		}
+		UpdatesDialog dialog = new UpdatesDialog(owner, thisVersion, latestVersion, hideOptionVisible, serviceRegistrar);
+		dialog.setModalityType(Dialog.ModalityType.APPLICATION_MODAL);
+		dialog.pack();
 		dialog.setLocationRelativeTo(owner);
 		dialog.setVisible(true);
 
@@ -155,12 +147,12 @@ public class CheckForUpdatesAction extends AbstractCyAction implements CyStartLi
 				getCyProperties().remove(HIDE_UPDATES_PROP);
 		}
 	}
-
+	
 	private Properties getCyProperties() {
 		return (Properties) serviceRegistrar.getService(CyProperty.class, "(cyPropertyName=cytoscape3.props)")
 				.getProperties();
 	}
-
+	
 	@Override
 	public boolean isEnabled() {
 		if (latestVersion == null)
@@ -170,7 +162,7 @@ public class CheckForUpdatesAction extends AbstractCyAction implements CyStartLi
 
 	private static boolean parseBoolean(String hideString) {
 		boolean lhide = false;
-
+		
 		if (hideString == null) {
 			lhide = false;
 		} else {
@@ -181,7 +173,7 @@ public class CheckForUpdatesAction extends AbstractCyAction implements CyStartLi
 				lhide = false;
 			}
 		}
-
+		
 		return lhide;
 	}
 }
