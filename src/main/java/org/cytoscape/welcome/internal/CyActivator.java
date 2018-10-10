@@ -1,17 +1,10 @@
 package org.cytoscape.welcome.internal;
 
-import static org.cytoscape.work.ServiceProperties.IN_TOOL_BAR;
-import static org.cytoscape.work.ServiceProperties.MENU_GRAVITY;
-import static org.cytoscape.work.ServiceProperties.PREFERRED_MENU;
-import static org.cytoscape.work.ServiceProperties.TITLE;
-
 import java.util.Properties;
 
 import org.cytoscape.service.util.AbstractCyActivator;
 import org.cytoscape.service.util.CyServiceRegistrar;
-import org.cytoscape.welcome.internal.task.GenerateCustomStyleTaskFactory;
 import org.cytoscape.welcome.internal.view.CheckForUpdatesAction;
-import org.cytoscape.work.ServiceProperties;
 import org.osgi.framework.BundleContext;
 
 /*
@@ -43,20 +36,6 @@ public class CyActivator extends AbstractCyActivator{
 	@Override
 	public void start(BundleContext bc) {
 		CyServiceRegistrar serviceRegistrar = getService(bc, CyServiceRegistrar.class);
-		
-		VisualStyleBuilder vsBuilder = new VisualStyleBuilder(serviceRegistrar);
-	
-		{
-			// Export preset tasks
-			GenerateCustomStyleTaskFactory factory = new GenerateCustomStyleTaskFactory(vsBuilder, serviceRegistrar);
-			Properties props = new Properties();
-			props.setProperty(PREFERRED_MENU, "Tools.Workflow[3.0]");
-			props.setProperty(MENU_GRAVITY, "20.0");
-			props.setProperty(TITLE, "Analyze selected networks and create custom styles");
-			props.setProperty(IN_TOOL_BAR, "false");
-			props.setProperty(ServiceProperties.ENABLE_FOR, "networkAndView");
-			registerAllServices(bc, factory, props);
-		}
 		
 		// Show Welcome Screen
 		CheckForUpdatesAction welcomeScreenAction = new CheckForUpdatesAction(serviceRegistrar);
